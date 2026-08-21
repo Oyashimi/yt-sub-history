@@ -138,15 +138,23 @@ export function useSubscriptions() {
    * チャンネル開設日を後追いで埋める。
    * 一覧はすでに表示済みなので、ここで失敗しても握り潰して構わない
    * (開設日が出ないだけで、登録日の一覧は成立する)。
+   *
+   * 登録が古い順に問い合わせる。画面の初期表示も「最初の登録」も
+   * そこなので、先に返ってきた分から順に埋まって見える。
    */
   async function enrichCreatedAt(accessToken: string) {
     enriching.value = true
     try {
-      const ids = channels.value.map((c) => c.channelId)
-      const created = await fetchChannelCreatedAt(accessToken, ids)
-      channels.value = channels.value.map((c) => {
-        const at = created.get(c.channelId)
-        return at ? { ...c, channelCreatedAt: at } : c
+      const ids = [...channels.value]
+        .sort((a, b) => a.subscribedAt.getTime() - b.subscribedAt.getTime())
+        .map((c) => c.channelId)
+
+      // 全件そろうのを待たず、返ってきたチャンクごとに一覧へ流し込む
+      await fetchChannelCreatedAt(accessToken, ids, (partial) => {
+        channels.value = channels.value.map((c) => {
+          const at = partial.get(c.channelId)
+          return at ? { ...c, channelCreatedAt: at } : c
+        })
       })
     } catch (e) {
       if (import.meta.env.DEV) console.warn('[channels] 開設日の取得に失敗しました', e)

@@ -144,38 +144,77 @@ const CHANNELS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/channels'
 export async function fetchChannelCreatedAt(
   accessToken: string,
   channelIds: string[],
-  onProgress?: (loaded: number, total: number) => void,
+  onChunk?: (partial: Map<string, Date>) => void,
 ): Promise<Map<string, Date>> {
   const out = new Map<string, Date>()
 
+  const chunks: string[][] = []
   for (let i = 0; i < channelIds.length; i += PAGE_SIZE) {
-    const chunk = channelIds.slice(i, i + PAGE_SIZE)
-    const params = new URLSearchParams({
-      part: 'snippet',
-      id: chunk.join(','),
-      maxResults: String(PAGE_SIZE),
-    })
-
-    let res: Response
-    try {
-      res = await fetch(`${CHANNELS_ENDPOINT}?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
-    } catch {
-      throw new AppError('network', 'fetch failed')
-    }
-    if (!res.ok) {
-      const payload = await res.json().catch(() => undefined)
-      throw toAppError(res.status, payload)
-    }
-
-    const json = (await res.json()) as ChannelListResponse
-    for (const item of json.items ?? []) {
-      if (item.snippet?.publishedAt) out.set(item.id, new Date(item.snippet.publishedAt))
-    }
-    onProgress?.(Math.min(i + PAGE_SIZE, channelIds.length), channelIds.length)
+    chunks.push(channelIds.slice(i, i + PAGE_SIZE))
   }
 
+  let next = 0
+  let failure: unknown = null
+
+  /**
+   * 空いたワーカーが先頭から chunk を取っていく。
+   * 直列に回すと 2,000 件で 40 往復ぶんの待ちがそのまま表示の遅れになるため。
+   */
+  async function worker() {
+    while (next < chunks.length && !failure) {
+      const chunk = chunks[next++]!
+      try {
+        const partial = await fetchCreatedAtChunk(accessToken, chunk)
+        for (const [id, at] of partial) out.set(id, at)
+        // 1 チャンク終わるたびに渡す。全部そろうのを待たずに画面へ出せる
+        onChunk?.(partial)
+      } catch (e) {
+        failure = e
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(CREATED_AT_CONCURRENCY, chunks.length) }, worker),
+  )
+
+  // 途中まで埋まった分は呼び出し側に渡してあるので、失敗はここで初めて投げる
+  if (failure) throw failure
+
+  return out
+}
+
+/** 開設日取得の同時リクエスト数。クォータは変わらず、待ち時間だけが縮む */
+const CREATED_AT_CONCURRENCY = 4
+
+async function fetchCreatedAtChunk(
+  accessToken: string,
+  chunk: string[],
+): Promise<Map<string, Date>> {
+  const params = new URLSearchParams({
+    part: 'snippet',
+    id: chunk.join(','),
+    maxResults: String(PAGE_SIZE),
+  })
+
+  let res: Response
+  try {
+    res = await fetch(`${CHANNELS_ENDPOINT}?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+  } catch {
+    throw new AppError('network', 'fetch failed')
+  }
+  if (!res.ok) {
+    const payload = await res.json().catch(() => undefined)
+    throw toAppError(res.status, payload)
+  }
+
+  const json = (await res.json()) as ChannelListResponse
+  const out = new Map<string, Date>()
+  for (const item of json.items ?? []) {
+    if (item.snippet?.publishedAt) out.set(item.id, new Date(item.snippet.publishedAt))
+  }
   return out
 }
 
