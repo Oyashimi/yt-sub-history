@@ -30,9 +30,9 @@ const isOn = (year: number) => axisHit(props.filter, year) === true
             :aria-label="`${b.year}年 ${b.count}件`"
             @click="emit('select', b.year)"
           >
-            <span class="flex h-28 w-full items-end">
+            <span class="flex h-28 w-full items-end justify-center">
               <span
-                class="w-full rounded-sm bg-fg transition-opacity"
+                class="w-full max-w-11 rounded-sm bg-fg transition-opacity"
                 :class="
                   hasSelection && !isOn(b.year)
                     ? 'opacity-20'
