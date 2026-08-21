@@ -36,8 +36,13 @@ const sample: SubscribedChannel[] = [
         チャンネル登録日チェッカー
       </h1>
 
+      <!--
+        OAuth 同意画面のアプリ名と一致する名前を主語に置き、目的を 1 文で言い切る。
+        Google のブランディング確認は「ホームページでアプリの目的が説明されているか」
+        を見るため、短縮するときもアプリ名と用途は残すこと。
+      -->
       <p class="mx-auto mt-5 max-w-md text-center text-[14px] leading-[2] text-fg-dim">
-        チャンネル登録日を一覧で見れます。
+        チャンネル登録日チェッカーは、YouTube のチャンネルをいつ登録したかを一覧で表示するツールです。
       </p>
 
       <div class="mt-9 text-center">
