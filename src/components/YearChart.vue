@@ -17,16 +17,11 @@ const isOn = (year: number) => axisHit(props.filter, year) === true
   <section v-if="buckets.length">
     <p class="mb-1.5 pl-6 font-round text-[12px] font-bold text-fg-dim">
       年ごとの登録数
-      <span class="ml-1 font-normal text-fg-faint">押すとその年だけ表示</span>
+      <span class="ml-1 font-normal text-fg-faint">グラフをクリックで年を選択できるよ</span>
     </p>
 
     <div class="rounded-3xl border-2 border-fg bg-surface px-5 pt-5 pb-4">
-      <!--
-        バーとラベルの境界線は、バー領域自身の border-b で引く。
-        列の間隔は ul の gap ではなくバー領域の px で作るので、
-        隣り合う border が途切れず 1 本の線になる。
-      -->
-      <ul class="flex items-stretch">
+      <ul class="flex items-stretch gap-[3px]">
         <li v-for="b in buckets" :key="b.year" class="flex-1">
           <button
             type="button"
@@ -35,7 +30,7 @@ const isOn = (year: number) => axisHit(props.filter, year) === true
             :aria-label="`${b.year}年 ${b.count}件`"
             @click="emit('select', b.year)"
           >
-            <span class="flex h-28 w-full items-end border-b border-line px-[1.5px]">
+            <span class="flex h-28 w-full items-end">
               <span
                 class="w-full rounded-sm bg-fg transition-opacity"
                 :class="
