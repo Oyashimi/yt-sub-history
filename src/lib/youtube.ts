@@ -1,5 +1,6 @@
 import { AppError } from './errors'
 import type {
+  ChannelListResponse,
   SubscribedChannel,
   Subscription,
   SubscriptionListResponse,
@@ -128,6 +129,54 @@ export async function fetchAllSubscriptions(
 
   onProgress?.({ loaded: unique.length, total, truncated })
   return { channels: unique, duplicates, truncated }
+}
+
+const CHANNELS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/channels'
+
+/**
+ * 登録先チャンネルの開設日をまとめて引く。
+ *
+ * channels.list は id をカンマ区切りで 50 件まで受けられて 1 リクエスト = 1 ユニット。
+ * subscriptions と同じ 50 件粒度なので、クォータ消費はおおよそ 2 倍になる。
+ *
+ * 削除済みのチャンネルは応答に含まれないため、戻り値の Map から欠落する。
+ */
+export async function fetchChannelCreatedAt(
+  accessToken: string,
+  channelIds: string[],
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<Map<string, Date>> {
+  const out = new Map<string, Date>()
+
+  for (let i = 0; i < channelIds.length; i += PAGE_SIZE) {
+    const chunk = channelIds.slice(i, i + PAGE_SIZE)
+    const params = new URLSearchParams({
+      part: 'snippet',
+      id: chunk.join(','),
+      maxResults: String(PAGE_SIZE),
+    })
+
+    let res: Response
+    try {
+      res = await fetch(`${CHANNELS_ENDPOINT}?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+    } catch {
+      throw new AppError('network', 'fetch failed')
+    }
+    if (!res.ok) {
+      const payload = await res.json().catch(() => undefined)
+      throw toAppError(res.status, payload)
+    }
+
+    const json = (await res.json()) as ChannelListResponse
+    for (const item of json.items ?? []) {
+      if (item.snippet?.publishedAt) out.set(item.id, new Date(item.snippet.publishedAt))
+    }
+    onProgress?.(Math.min(i + PAGE_SIZE, channelIds.length), channelIds.length)
+  }
+
+  return out
 }
 
 /**

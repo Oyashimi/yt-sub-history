@@ -148,7 +148,7 @@ const top5 = computed(() =>
       </div>
 
       <div
-        class="rounded-3xl border-2 border-fg bg-surface px-5 py-2 shadow-[5px_5px_0_var(--color-fg)]"
+        class="rounded-3xl border-2 border-fg bg-surface px-5 py-2"
       >
         <p v-if="isFuzzyMatch" class="border-b border-line py-2.5 text-[11px] text-fg-faint">
           ※完全に一致する名前がないため、近いものを表示しています。

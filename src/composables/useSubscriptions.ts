@@ -1,5 +1,9 @@
 import { computed, ref, shallowRef } from 'vue'
-import { fetchAllSubscriptions, type FetchProgress } from '@/lib/youtube'
+import {
+  fetchAllSubscriptions,
+  fetchChannelCreatedAt,
+  type FetchProgress,
+} from '@/lib/youtube'
 import { buildStats } from '@/lib/stats'
 import { AppError, isAppError, type AppErrorKind } from '@/lib/errors'
 import { filterByQuery, normalizeForSearch } from '@/lib/search'
@@ -53,6 +57,8 @@ const sortOrder = ref<SortOrder>('oldest')
 const keyword = ref('')
 const yearFilter = ref<AxisFilter>(defaultAxisFilter())
 const spanFilter = ref<AxisFilter>(defaultAxisFilter())
+/** 開設日の後追い取得が進行中か */
+const enriching = ref(false)
 
 export function useSubscriptions() {
   const stats = computed(() => buildStats(channels.value))
@@ -118,11 +124,34 @@ export function useSubscriptions() {
       channels.value = res.channels
       truncated.value = res.truncated
       status.value = 'ready'
+      // 開設日は後追いで埋める。取得に失敗しても一覧は壊さない
+      void enrichCreatedAt(accessToken)
     } catch (e) {
       const err: AppError = isAppError(e) ? e : new AppError('unknown', String(e))
       errorKind.value = err.kind
       status.value = 'error'
       throw err
+    }
+  }
+
+  /**
+   * チャンネル開設日を後追いで埋める。
+   * 一覧はすでに表示済みなので、ここで失敗しても握り潰して構わない
+   * (開設日が出ないだけで、登録日の一覧は成立する)。
+   */
+  async function enrichCreatedAt(accessToken: string) {
+    enriching.value = true
+    try {
+      const ids = channels.value.map((c) => c.channelId)
+      const created = await fetchChannelCreatedAt(accessToken, ids)
+      channels.value = channels.value.map((c) => {
+        const at = created.get(c.channelId)
+        return at ? { ...c, channelCreatedAt: at } : c
+      })
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn('[channels] 開設日の取得に失敗しました', e)
+    } finally {
+      enriching.value = false
     }
   }
 
@@ -169,6 +198,7 @@ export function useSubscriptions() {
     errorKind,
     progress,
     truncated,
+    enriching,
     sortOrder,
     keyword,
     yearFilter,

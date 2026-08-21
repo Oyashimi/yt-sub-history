@@ -112,6 +112,11 @@ export function generateMockChannels(): SubscribedChannel[] {
       // 1 割はサムネ欠損にして、アイコンのフォールバックを確認できるようにする
       const noThumb = rand() < 0.1
 
+      // 開設日は登録日より前。0〜6 年ほど遡らせ、1 割は未取得(削除済み想定)にする
+      const lead = Math.floor(rand() * 2200)
+      const created = new Date(date.getTime() - lead * 86_400_000)
+      const noCreated = rand() < 0.1
+
       out.push({
         channelId: `UCmock${String(i).padStart(6, '0')}`,
         title,
@@ -120,6 +125,7 @@ export function generateMockChannels(): SubscribedChannel[] {
           : avatarDataUrl(Array.from(title)[0] ?? '?', Math.floor(rand() * 4)),
         publishedAt: date.toISOString(),
         subscribedAt: date,
+        ...(noCreated ? {} : { channelCreatedAt: created }),
       })
       i++
     }

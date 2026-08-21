@@ -48,6 +48,19 @@ export interface YouTubeApiError {
   }
 }
 
+export interface ChannelListResponse {
+  kind: string
+  etag: string
+  items: Array<{
+    id: string
+    snippet: {
+      title: string
+      /** チャンネルの開設日時 */
+      publishedAt: string
+    }
+  }>
+}
+
 /** UI が扱う正規化済みのチャンネル 1 件 */
 export interface SubscribedChannel {
   channelId: string
@@ -57,4 +70,9 @@ export interface SubscribedChannel {
   publishedAt: string
   /** 登録日時の Date */
   subscribedAt: Date
+  /**
+   * チャンネルの開設日時。channels.list を引いた後にだけ入る。
+   * 削除済みチャンネルは API が返さないため undefined のままになる。
+   */
+  channelCreatedAt?: Date
 }
