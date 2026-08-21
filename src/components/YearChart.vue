@@ -1,40 +1,62 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { YearBucket } from '@/lib/stats'
+import { axisHit, type AxisFilter } from '@/composables/useSubscriptions'
 
-const props = defineProps<{ buckets: YearBucket[] }>()
+const props = defineProps<{ buckets: YearBucket[]; filter: AxisFilter }>()
+const emit = defineEmits<{ select: [year: number] }>()
 
 const max = computed(() => Math.max(1, ...props.buckets.map((b) => b.count)))
+
+/** 登録年フィルタが成立しているか(値が未選択なら成立していない) */
+const hasSelection = computed(() => axisHit(props.filter, 0) !== null)
+const isOn = (year: number) => axisHit(props.filter, year) === true
 </script>
 
 <template>
   <section v-if="buckets.length">
-    <p class="mb-1.5 pl-6 font-round text-[12px] font-bold text-fg-dim">年ごとの登録数</p>
+    <p class="mb-1.5 pl-6 font-round text-[12px] font-bold text-fg-dim">
+      年ごとの登録数
+      <span class="ml-1 font-normal text-fg-faint">押すとその年だけ表示</span>
+    </p>
+
     <div class="rounded-3xl border-2 border-fg bg-surface px-5 pt-5 pb-4">
-      <ul class="flex h-28 items-end gap-[3px]">
-        <li
-          v-for="b in buckets"
-          :key="b.year"
-          class="flex h-full flex-1 items-end"
-          :title="`${b.year}年 ${b.count}件`"
-        >
-          <span
-            class="w-full rounded-sm bg-fg"
-            :style="{ height: `${Math.max(2, Math.round((b.count / max) * 100))}%` }"
-          />
+      <!--
+        バーとラベルの境界線は、バー領域自身の border-b で引く。
+        列の間隔は ul の gap ではなくバー領域の px で作るので、
+        隣り合う border が途切れず 1 本の線になる。
+      -->
+      <ul class="flex items-stretch">
+        <li v-for="b in buckets" :key="b.year" class="flex-1">
+          <button
+            type="button"
+            class="group flex w-full cursor-pointer flex-col items-center pt-2"
+            :aria-pressed="isOn(b.year)"
+            :aria-label="`${b.year}年 ${b.count}件`"
+            @click="emit('select', b.year)"
+          >
+            <span class="flex h-28 w-full items-end border-b border-line px-[1.5px]">
+              <span
+                class="w-full rounded-sm bg-fg transition-opacity"
+                :class="
+                  hasSelection && !isOn(b.year)
+                    ? 'opacity-20'
+                    : 'opacity-100 group-hover:opacity-70'
+                "
+                :style="{ height: `${Math.max(2, Math.round((b.count / max) * 100))}%` }"
+              />
+            </span>
+            <span
+              class="pt-2 font-mono text-[8px] tabular-nums transition-colors sm:text-[9px]"
+              :class="
+                isOn(b.year) ? 'font-bold text-fg' : 'text-fg-faint'
+              "
+            >
+              {{ String(b.year).slice(2) }}
+            </span>
+          </button>
         </li>
       </ul>
-
-      <!-- 目盛り。年数が多いと詰まるので下 2 桁のみ -->
-      <div class="mt-2 flex gap-[3px] border-t border-line pt-2">
-        <span
-          v-for="b in buckets"
-          :key="b.year"
-          class="flex-1 text-center font-mono text-[8px] tabular-nums text-fg-faint sm:text-[9px]"
-        >
-          {{ String(b.year).slice(2) }}
-        </span>
-      </div>
     </div>
   </section>
 </template>

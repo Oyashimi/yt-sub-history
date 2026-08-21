@@ -93,7 +93,12 @@ function normalize(item: Subscription): SubscribedChannel {
 export async function fetchAllSubscriptions(
   accessToken: string,
   onProgress?: (p: FetchProgress) => void,
-): Promise<{ channels: SubscribedChannel[]; truncated: boolean }> {
+): Promise<{
+  channels: SubscribedChannel[]
+  /** 同一 channelId が複数返ってきた件数。通常は 0 */
+  duplicates: number
+  truncated: boolean
+}> {
   const channels: SubscribedChannel[] = []
   let pageToken: string | undefined
   let total: number | null = null
@@ -111,6 +116,47 @@ export async function fetchAllSubscriptions(
     if (page === MAX_PAGES - 1) truncated = true
   }
 
-  onProgress?.({ loaded: channels.length, total, truncated })
-  return { channels, truncated }
+  const { channels: unique, duplicates } = dedupeByChannel(channels)
+
+  if (import.meta.env.DEV && duplicates > 0) {
+    console.warn(
+      `[subscriptions] 同一チャンネルの重複を ${duplicates} 件検出しました ` +
+        `(取得 ${channels.length} 件 → ${unique.length} 件)。` +
+        `各チャンネルにつき最も古い登録日を採用しています。`,
+    )
+  }
+
+  onProgress?.({ loaded: unique.length, total, truncated })
+  return { channels: unique, duplicates, truncated }
+}
+
+/**
+ * channelId 単位で重複を潰す。
+ *
+ * subscriptions.list が返すのは「現在有効な登録」のみで、解除・再登録しても
+ * 履歴は積み上がらない仕様。つまり本来ここで重複は出ない。
+ * ただしページングは関連度順(既定)で進むため、順序が揺れて同じ項目が
+ * 別ページに現れる可能性がゼロとは言い切れないので保険をかけている。
+ *
+ * 重複した場合は「最も古い登録日」を残す。このサイトが見せたいのは
+ * 最初に登録した日なので、新しい方を採るとその答えが失われる。
+ */
+export function dedupeByChannel(items: SubscribedChannel[]): {
+  channels: SubscribedChannel[]
+  duplicates: number
+} {
+  const byId = new Map<string, SubscribedChannel>()
+  let duplicates = 0
+
+  for (const c of items) {
+    const prev = byId.get(c.channelId)
+    if (!prev) {
+      byId.set(c.channelId, c)
+      continue
+    }
+    duplicates++
+    if (c.subscribedAt.getTime() < prev.subscribedAt.getTime()) byId.set(c.channelId, c)
+  }
+
+  return { channels: [...byId.values()], duplicates }
 }

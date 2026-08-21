@@ -2,9 +2,46 @@ import { computed, ref, shallowRef } from 'vue'
 import { fetchAllSubscriptions, type FetchProgress } from '@/lib/youtube'
 import { buildStats } from '@/lib/stats'
 import { AppError, isAppError, type AppErrorKind } from '@/lib/errors'
+import { filterByQuery, normalizeForSearch } from '@/lib/search'
+import { elapsedYears } from '@/lib/format'
 import type { SubscribedChannel } from '@/types/youtube'
 
 export type SortOrder = 'oldest' | 'newest'
+
+export type RangeMode = 'lte' | 'gte' | 'range'
+
+/**
+ * 1 つの軸(登録年 / 登録期間)の絞り込み条件。
+ * 値が未選択(null)のうちは条件として成立していない、と扱う。
+ */
+export interface AxisFilter {
+  mode: RangeMode
+  a: number | null
+  b: number | null
+}
+
+export function defaultAxisFilter(): AxisFilter {
+  return { mode: 'gte', a: null, b: null }
+}
+
+/**
+ * 値が条件に合うか。
+ * 条件が成立していないときは null を返し、判定そのものに参加させない
+ * (false を返すと OR が常に落ちてしまうため)。
+ *
+ * range は片側だけの指定も許す。プルダウン 2 つの UI では
+ * 「始点だけ選んだ」状態が自然に起きるため。
+ */
+export function axisHit(f: AxisFilter | null, v: number): boolean | null {
+  if (!f) return null
+  if (f.mode === 'lte') return f.a === null ? null : v <= f.a
+  if (f.mode === 'gte') return f.a === null ? null : v >= f.a
+
+  if (f.a === null && f.b === null) return null
+  if (f.b === null) return v >= f.a!
+  if (f.a === null) return v <= f.b
+  return v >= Math.min(f.a, f.b) && v <= Math.max(f.a, f.b)
+}
 
 /** すべてメモリ上のみ。永続化しない。 */
 const channels = shallowRef<SubscribedChannel[]>([])
@@ -14,15 +51,54 @@ const progress = ref<FetchProgress>({ loaded: 0, total: null, truncated: false }
 const truncated = ref(false)
 const sortOrder = ref<SortOrder>('oldest')
 const keyword = ref('')
+const yearFilter = ref<AxisFilter>(defaultAxisFilter())
+const spanFilter = ref<AxisFilter>(defaultAxisFilter())
 
 export function useSubscriptions() {
   const stats = computed(() => buildStats(channels.value))
 
+  /**
+   * 正規化済みのタイトル。channels が差し替わったときだけ作り直すので、
+   * 1 打鍵ごとに全件を正規化し直すことはない。
+   */
+  const searchIndex = computed(() => channels.value.map((c) => normalizeForSearch(c.title)))
+
+  const hasDateFilter = computed(
+    () =>
+      axisHit(yearFilter.value, 0) !== null || axisHit(spanFilter.value, 0) !== null,
+  )
+
+  /**
+   * 登録年と登録期間で先に絞る。2 軸は OR で合流させる
+   * (どちらか一方でも当てはまれば残す)。
+   * searchIndex は channels と同じ添字なので items と keys を対で取り出す。
+   */
+  const dateFiltered = computed(() => {
+    if (!hasDateFilter.value) return { items: channels.value, keys: searchIndex.value }
+
+    const items: SubscribedChannel[] = []
+    const keys: string[] = []
+    channels.value.forEach((c, i) => {
+      const y = axisHit(yearFilter.value, c.subscribedAt.getFullYear())
+      const s = axisHit(spanFilter.value, elapsedYears(c.subscribedAt))
+      // null(未設定)の軸は判定に参加させない
+      if (y === true || s === true) {
+        items.push(c)
+        keys.push(searchIndex.value[i] ?? '')
+      }
+    })
+    return { items, keys }
+  })
+
+  const filtered = computed(() =>
+    filterByQuery(dateFiltered.value.items, dateFiltered.value.keys, keyword.value),
+  )
+
+  /** 部分一致が 0 件で、曖昧一致にフォールバックしたか */
+  const isFuzzyMatch = computed(() => filtered.value.fuzzy)
+
   const visibleChannels = computed(() => {
-    const q = keyword.value.trim().toLowerCase()
-    const list = q
-      ? channels.value.filter((c) => c.title.toLowerCase().includes(q))
-      : [...channels.value]
+    const list = [...filtered.value.items]
     list.sort((a, b) =>
       sortOrder.value === 'oldest'
         ? a.subscribedAt.getTime() - b.subscribedAt.getTime()
@@ -80,11 +156,14 @@ export function useSubscriptions() {
     truncated.value = false
     keyword.value = ''
     sortOrder.value = 'oldest'
+    yearFilter.value = defaultAxisFilter()
+    spanFilter.value = defaultAxisFilter()
   }
 
   return {
     channels,
     visibleChannels,
+    isFuzzyMatch,
     stats,
     status,
     errorKind,
@@ -92,6 +171,9 @@ export function useSubscriptions() {
     truncated,
     sortOrder,
     keyword,
+    yearFilter,
+    spanFilter,
+    hasDateFilter,
     load,
     loadMock,
     reset,
