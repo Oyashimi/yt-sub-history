@@ -1,13 +1,23 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import HighlightStats from './HighlightStats.vue'
 import YearChart from './YearChart.vue'
 import ChannelRow from './ChannelRow.vue'
+import ShareCardModal from './ShareCardModal.vue'
 import { useSubscriptions } from '@/composables/useSubscriptions'
 import { MAX_PAGES, PAGE_SIZE } from '@/lib/youtube'
 
 const emit = defineEmits<{ logout: [] }>()
 
-const { visibleChannels, stats, sortOrder, keyword, truncated } = useSubscriptions()
+const { channels, visibleChannels, stats, sortOrder, keyword, truncated } =
+  useSubscriptions()
+
+const showShare = ref(false)
+const top5 = computed(() =>
+  [...channels.value]
+    .sort((a, b) => a.subscribedAt.getTime() - b.subscribedAt.getTime())
+    .slice(0, 5),
+)
 </script>
 
 <template>
@@ -43,6 +53,16 @@ const { visibleChannels, stats, sortOrder, keyword, truncated } = useSubscriptio
 
       <div class="mt-6">
         <HighlightStats :stats="stats" />
+      </div>
+
+      <div class="mt-4">
+        <button
+          type="button"
+          class="w-full rounded-2xl bg-gradient-to-r from-flame to-gold px-6 py-4 text-base font-black text-ink shadow-lg shadow-black/40 transition hover:brightness-110"
+          @click="showShare = true"
+        >
+          🖼 シェアカードを作る
+        </button>
       </div>
 
       <div class="mt-4">
@@ -100,5 +120,12 @@ const { visibleChannels, stats, sortOrder, keyword, truncated } = useSubscriptio
         登録日は YouTube API が返す値です。ごく初期の登録では日時が実際とずれる場合があるため、参考値としてご覧ください。
       </p>
     </template>
+
+    <ShareCardModal
+      v-if="showShare"
+      :stats="stats"
+      :top5="top5"
+      @close="showShare = false"
+    />
   </section>
 </template>
