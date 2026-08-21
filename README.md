@@ -1,71 +1,64 @@
-# 古参チェッカー（yt-sub-history）
+# チャンネル登録日チェッカー
 
-YouTube の登録チャンネルを「登録した日」順に並べ替えて、古参度をシェアカードにできるサイト。
-**完全クライアント完結**（サーバー・DB なし）で、ユーザーデータは運営インフラを一切通りません。
+YouTube のチャンネル登録を「登録した日」順に並べて表示するサイトです。
 
-詳しい戦略は [youtube-subscription-timeline-plan.md](./youtube-subscription-timeline-plan.md) を参照。
+いつ登録したかは YouTube 上では確認できませんが、この日付は API から取得できます。
+Google でログインするだけで、忘れていた最初の登録がわかります。
 
-## 技術スタック
+このサイトに**サーバーはありません**。データはあなたのブラウザと Google の間だけでやり取りされ、
+運営者を含む第三者が受け取ることはありません。
 
-Vue 3 + Vite + TypeScript / Tailwind CSS v4 / Google Identity Services（token model）/
-YouTube Data API v3 / html-to-image / Cloudflare Pages
+## できること
 
-## セットアップ
+**並べ替え**
+登録日の古い順・新しい順。
 
-```bash
-npm install
-cp .env.example .env   # VITE_GOOGLE_CLIENT_ID を設定
-```
+**最初の登録**
+いちばん古く登録したチャンネルと、その日付・経過期間。
 
-### Google Cloud 側
+**年ごとの登録数**
+どの年に何チャンネル登録したかをグラフで表示します。グラフを押すとその年だけに絞り込めます。
 
-1. GCP プロジェクトを作成し、**YouTube Data API v3** を有効化
-2. OAuth 同意画面（External）を設定
-   - スコープ: `https://www.googleapis.com/auth/youtube.readonly`（sensitive）
-   - プライバシーポリシー URL: `https://<ドメイン>/privacy`
-   - 利用規約 URL: `https://<ドメイン>/terms`
-3. OAuth クライアント ID（ウェブアプリケーション）を作成
-   - 承認済み JavaScript オリジン: `http://localhost:5173` と本番ドメイン
-   - client secret は使いません（token model のため）
-4. 発行された client ID を `.env` の `VITE_GOOGLE_CLIENT_ID` に設定
+**絞り込み**
 
-公開前に **OAuth 検証申請** と **クォータ増枠申請** が必要です（計画書 §7 参照）。
-未検証の間はテストユーザー（最大 100 人）のみ利用できます。
+| 対象 | 指定できること |
+| --- | --- |
+| 登録年 | 以下 / 以上 / 範囲 |
+| 登録期間 | 以下 / 以上 / 範囲 |
+| 名前 | スペース区切りで複数指定。ひらがな・カタカナ、全角・半角はどれでも一致します |
 
-## コマンド
+登録年と登録期間はどちらかに当てはまれば表示されます（OR）。名前での絞り込みはそれとは別に効きます。
 
-| コマンド            | 内容                             |
-| ------------------- | -------------------------------- |
-| `npm run dev`       | 開発サーバー（`localhost:5173`） |
-| `npm run build`     | 型チェック + 本番ビルド → `dist` |
-| `npm run typecheck` | 型チェックのみ                   |
-| `npm run preview`   | ビルド成果物のプレビュー         |
+**画像として保存**
+表示結果を PNG で書き出せます。
 
-## デプロイ（Cloudflare Pages）
+## データの扱い
 
-- ビルドコマンド: `npm run build` / 出力ディレクトリ: `dist`
-- 環境変数に `VITE_GOOGLE_CLIENT_ID` を設定
-- SPA フォールバックは [public/\_redirects](./public/_redirects) で設定済み
+| | |
+| --- | --- |
+| 保存 | **しません。** サーバーもデータベースもありません |
+| 通信経路 | ブラウザ ⇄ Google のみ。運営インフラを通りません |
+| 保持場所 | ブラウザのメモリ上のみ。localStorage や Cookie は使いません |
+| 消えるタイミング | タブを閉じる、再読み込み、ログアウトのいずれか |
+| 要求する権限 | `youtube.readonly`（読み取り専用）。登録の追加・削除はしません |
+| ログアウト時 | アクセストークンを失効（revoke）させます |
 
-## ディレクトリ構成
+権限は [Google アカウントのセキュリティ設定](https://myaccount.google.com/permissions)
+からいつでも取り消せます。
 
-```
-src/
-├── lib/
-│   ├── youtube.ts     subscriptions.list の全ページ取得（最大 1,000 件）
-│   ├── stats.ts       古参度・年別集計・称号
-│   ├── format.ts      日付/経過期間フォーマット
-│   ├── errors.ts      AppError とユーザー向けメッセージ
-│   └── image.ts       サムネの data URL 化（html-to-image 対策）
-├── composables/
-│   ├── useAuth.ts     GIS token model。トークンはメモリのみ
-│   └── useSubscriptions.ts  取得結果・ソート・フィルタ
-├── components/        UI（ランディング / 結果 / シェアカード ほか）
-├── views/             ルート単位のページ
-└── types/youtube.ts   API レスポンス型
-```
+くわしくは公開サイトの `/privacy`（プライバシーポリシー）と `/terms`（利用規約）をご覧ください。
 
-## 実装上の禁止事項
+## 技術
 
-- **トークンやユーザーデータを永続化しない**（localStorage / sessionStorage / Cookie 禁止）
-- インデントは半角スペース 2 つ、TypeScript strict モード
+Vue 3 + Vite + TypeScript / Tailwind CSS v4 / Google Identity Services / YouTube Data API v3
+
+サーバーサイドの処理は一切なく、静的ファイルだけを配信しています。
+アクセストークンはブラウザのメモリ上にのみ置き、どこにも書き出しません。
+
+## 非公式なサービスです
+
+Google LLC および YouTube とは提携していません。個人が開発・運営しています。
+
+本サービスは YouTube API Services を利用しています。ご利用にあたっては
+[YouTube 利用規約](https://www.youtube.com/t/terms) と
+[Google プライバシーポリシー](https://policies.google.com/privacy) が適用されます。
