@@ -59,15 +59,21 @@ defineProps<{ stats: Stats }>()
       </div>
     </template>
 
-    <!-- 集計値 -->
-    <dl class="mt-5 grid grid-cols-3 items-stretch gap-2.5">
-      <div class="rounded-2xl border border-fg bg-surface px-3 py-3.5 text-center">
+    <!--
+      集計値。
+      「チャンネル開設」は日付と時刻が入って一番幅を要するので、
+      常に 1 行使い切らせ、残りの 2 つを下段に 2 列で並べる。
+    -->
+    <dl class="mt-5 grid grid-cols-2 items-stretch gap-2.5">
+      <div class="col-span-2 rounded-2xl border border-fg bg-surface px-3 py-3.5 text-center">
         <dt class="text-[10px] text-fg-dim">チャンネル開設</dt>
-        <dd v-if="stats.oldest?.channelCreatedAt" class="mt-1.5">
-          <span class="block font-mono text-[15px] leading-none font-medium tabular-nums">
-            {{ formatDate(stats.oldest.channelCreatedAt) }}
-          </span>
-          <span class="mt-1 block font-mono text-[11px] tabular-nums text-fg-dim">
+        <!-- 時刻は主役カードと同じ 0.62em。日付に添える扱いにする -->
+        <dd
+          v-if="stats.oldest?.channelCreatedAt"
+          class="mt-1.5 font-mono text-[22px] leading-none font-medium tabular-nums"
+        >
+          {{ formatDate(stats.oldest.channelCreatedAt) }}
+          <span class="text-[0.62em] text-fg-dim">
             {{ formatTime(stats.oldest.channelCreatedAt) }}
           </span>
         </dd>

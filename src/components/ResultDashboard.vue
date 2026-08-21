@@ -41,7 +41,9 @@ function toggleYear(year: number) {
 }
 
 const showShare = ref(false)
-const top5 = computed(() =>
+
+/** 書き出し画像に載せる 5 件。一覧の並び順とは独立させ、古い順で固定する */
+const shareList = computed(() =>
   [...channels.value]
     .sort((a, b) => a.subscribedAt.getTime() - b.subscribedAt.getTime())
     .slice(0, 5),
@@ -179,7 +181,7 @@ const top5 = computed(() =>
     <ShareCardModal
       v-if="showShare"
       :stats="stats"
-      :top5="top5"
+      :list="shareList"
       @close="showShare = false"
     />
   </section>
