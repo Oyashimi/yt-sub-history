@@ -9,22 +9,32 @@ const max = computed(() => Math.max(1, ...props.buckets.map((b) => b.count)))
 
 <template>
   <section v-if="buckets.length">
-    <h2 class="text-xs text-fg-dim">年ごとの登録数</h2>
-    <ul class="mt-5 flex items-end gap-px overflow-x-auto">
-      <li
-        v-for="b in buckets"
-        :key="b.year"
-        class="flex min-w-6 flex-1 flex-col items-center gap-2"
-      >
-        <div
-          class="w-full bg-fg-faint"
-          :style="{ height: `${Math.round((b.count / max) * 72) + 1}px` }"
-          :title="`${b.year}年: ${b.count}件`"
-        />
-        <span class="text-[10px] tabular-nums text-fg-faint">
+    <p class="mb-1.5 pl-6 font-round text-[12px] font-bold text-fg-dim">年ごとの登録数</p>
+    <div class="rounded-3xl border-2 border-fg bg-surface px-5 pt-5 pb-4">
+      <ul class="flex h-28 items-end gap-[3px]">
+        <li
+          v-for="b in buckets"
+          :key="b.year"
+          class="flex h-full flex-1 items-end"
+          :title="`${b.year}年 ${b.count}件`"
+        >
+          <span
+            class="w-full rounded-sm bg-fg"
+            :style="{ height: `${Math.max(2, Math.round((b.count / max) * 100))}%` }"
+          />
+        </li>
+      </ul>
+
+      <!-- 目盛り。年数が多いと詰まるので下 2 桁のみ -->
+      <div class="mt-2 flex gap-[3px] border-t border-line pt-2">
+        <span
+          v-for="b in buckets"
+          :key="b.year"
+          class="flex-1 text-center font-mono text-[8px] tabular-nums text-fg-faint sm:text-[9px]"
+        >
           {{ String(b.year).slice(2) }}
         </span>
-      </li>
-    </ul>
+      </div>
+    </div>
   </section>
 </template>

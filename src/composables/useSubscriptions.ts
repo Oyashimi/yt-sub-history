@@ -50,6 +50,29 @@ export function useSubscriptions() {
     }
   }
 
+  /**
+   * 開発用。渡されたダミーデータを、実際の取得と同じように
+   * 1 ページ 50 件ずつ進捗を出しながら読み込む。
+   */
+  async function loadMock(all: SubscribedChannel[], pageDelayMs = 260) {
+    status.value = 'loading'
+    errorKind.value = null
+    progress.value = { loaded: 0, total: all.length, truncated: false }
+
+    for (let loaded = 0; loaded < all.length; loaded += 50) {
+      await new Promise((r) => setTimeout(r, pageDelayMs))
+      progress.value = {
+        loaded: Math.min(loaded + 50, all.length),
+        total: all.length,
+        truncated: false,
+      }
+    }
+
+    channels.value = all
+    truncated.value = false
+    status.value = 'ready'
+  }
+
   function reset() {
     channels.value = []
     status.value = 'idle'
@@ -70,6 +93,7 @@ export function useSubscriptions() {
     sortOrder,
     keyword,
     load,
+    loadMock,
     reset,
   }
 }

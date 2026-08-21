@@ -3,8 +3,8 @@ import GoogleSignInButton from './GoogleSignInButton.vue'
 import UserCircleIcon from './UserCircleIcon.vue'
 import { formatDate, formatElapsed } from '@/lib/format'
 
-defineProps<{ configError: string | null }>()
-const emit = defineEmits<{ start: [] }>()
+defineProps<{ configError: string | null; showMock?: boolean }>()
+const emit = defineEmits<{ start: []; mock: [] }>()
 
 /**
  * 出力形式を示すためのサンプル。実データではない。
@@ -34,6 +34,17 @@ const sample = [
 
       <div class="mt-9 text-center">
         <GoogleSignInButton @click="emit('start')" />
+      </div>
+
+      <!-- 開発時のみ。ログインせずに結果画面を確認するためのもの -->
+      <div v-if="showMock" class="mt-3 text-center">
+        <button
+          type="button"
+          class="text-[11px] text-fg-faint underline underline-offset-4 transition-colors hover:text-fg-dim"
+          @click="emit('mock')"
+        >
+          ダミーデータで表示（開発用）
+        </button>
       </div>
 
       <!-- 権限を渡すか判断する場所なので、安全性の説明はボタン直下に置く -->

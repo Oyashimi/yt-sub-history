@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import LandingHero from '@/components/LandingHero.vue'
 import LoadingPanel from '@/components/LoadingPanel.vue'
 import ErrorPanel from '@/components/ErrorPanel.vue'
@@ -9,9 +9,24 @@ import { useSubscriptions } from '@/composables/useSubscriptions'
 import { isAppError } from '@/lib/errors'
 
 const { signIn, signOut, isConfigured } = useAuth()
-const { status, errorKind, progress, load, reset } = useSubscriptions()
+const { status, errorKind, progress, load, loadMock, reset } = useSubscriptions()
 
 const configError = ref<string | null>(null)
+
+/** 開発時のみ。本番ビルドではこのブロックごと削除される */
+const isDev = import.meta.env.DEV
+
+async function startMock() {
+  if (!isDev) return
+  const { generateMockChannels } = await import('@/lib/mock')
+  await loadMock(generateMockChannels())
+}
+
+onMounted(() => {
+  if (isDev && new URLSearchParams(window.location.search).has('mock')) {
+    void startMock()
+  }
+})
 
 async function start() {
   configError.value = null
@@ -46,7 +61,13 @@ function logout() {
 
 <template>
   <main>
-    <LandingHero v-if="status === 'idle'" :config-error="configError" @start="start" />
+    <LandingHero
+      v-if="status === 'idle'"
+      :config-error="configError"
+      :show-mock="isDev"
+      @start="start"
+      @mock="startMock"
+    />
     <LoadingPanel v-else-if="status === 'loading'" :progress="progress" />
     <ErrorPanel
       v-else-if="status === 'error'"

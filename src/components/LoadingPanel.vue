@@ -12,18 +12,36 @@ const percent = computed(() => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-xl px-6 pt-40 pb-16">
-    <p class="text-sm text-fg-dim">読み込んでいます</p>
-    <p class="mt-2 text-sm tabular-nums text-fg">
-      {{ progress.loaded }}<span v-if="progress.total"> / {{ progress.total }}</span> 件
+  <section class="mx-auto max-w-xl px-6 pt-32 pb-20 sm:pt-44">
+    <p class="text-center font-round text-[13px] font-bold text-fg-dim">読み込み中</p>
+
+    <!-- 取得済みの件数。数字そのものを見せ場にする -->
+    <p class="mt-5 text-center">
+      <span class="font-round text-[64px] leading-none font-bold tabular-nums">
+        {{ progress.loaded }}
+      </span>
+      <span class="ml-1.5 font-round text-[15px] text-fg-dim">件</span>
     </p>
 
-    <div class="mt-6 h-px w-full bg-line" role="status" aria-label="読み込み中">
+    <p v-if="progress.total" class="mt-2 text-center text-[12px] tabular-nums text-fg-faint">
+      全 {{ progress.total }} 件
+    </p>
+
+    <!-- 枠付きのベタ塗りバー。グラデーションは使わない -->
+    <div
+      class="mx-auto mt-9 h-4 max-w-sm overflow-hidden rounded-full border border-fg bg-surface"
+      role="progressbar"
+      :aria-valuenow="percent ?? undefined"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-label="読み込み中"
+    >
       <div
         v-if="percent !== null"
-        class="h-px bg-fg-dim transition-[width] duration-300"
+        class="h-full bg-fg transition-[width] duration-300 ease-out"
         :style="{ width: `${percent}%` }"
       />
+      <div v-else class="animate-bar-sweep h-full w-1/4 bg-fg" />
     </div>
   </section>
 </template>

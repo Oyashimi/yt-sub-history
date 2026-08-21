@@ -6,10 +6,10 @@
   --color-surface: #fffdf8;
   --color-line: #e0d8c8;
 
-  /* インク */
-  --color-fg: #211d1a;
-  --color-fg-dim: #6f675e;
-  --color-fg-faint: #a89f91;
+  /* インク。地はベージュだが文字はニュートラルな黒系で通す */
+  --color-fg: #1c1c1c;
+  --color-fg-dim: #4d4d4d;
+  --color-fg-faint: #6a6a6a;
 
   /* リソの特色。1 色に統一する */
   --color-pink: #ff5c9a;
@@ -46,6 +46,19 @@ body::after {
   opacity: 0.5;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
+}
+
+/* 総件数が不明な間の不定形プログレス */
+@keyframes bar-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+.animate-bar-sweep {
+  animation: bar-sweep 1.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
