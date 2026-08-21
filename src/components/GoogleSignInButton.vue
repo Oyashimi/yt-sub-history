@@ -1,9 +1,9 @@
 <template>
   <button
     type="button"
-    class="inline-flex items-center gap-3 border border-line bg-surface px-5 py-3 text-sm text-fg transition-colors hover:border-fg-faint focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg-dim"
+    class="group inline-flex items-center gap-3 rounded-full border-2 border-fg bg-surface px-7 py-4 font-round text-[15px] font-medium text-fg shadow-[4px_4px_0_var(--color-fg)] transition-[transform,box-shadow] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pink"
   >
-    <svg class="size-4 shrink-0" viewBox="0 0 48 48" aria-hidden="true">
+    <svg class="size-5 shrink-0" viewBox="0 0 48 48" aria-hidden="true">
       <path
         fill="#EA4335"
         d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2.5 24 .5 14.6.5 6.5 5.9 2.6 13.7l7.8 6.1C12.3 13.9 17.6 9.5 24 9.5z"

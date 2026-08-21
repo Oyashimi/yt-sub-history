@@ -29,7 +29,6 @@
         >
         が適用されます。
       </p>
-      <p>本サービスは Google および YouTube とは提携していない非公式のサービスです。</p>
     </div>
   </footer>
 </template>

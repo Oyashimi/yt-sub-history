@@ -1,16 +1,26 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-base: #0d0d0d;
-  --color-surface: #151515;
-  --color-line: #232323;
-  --color-fg: #e8e8e6;
-  --color-fg-dim: #9a9a97;
-  --color-fg-faint: #6a6a67;
+  /* 紙 */
+  --color-base: #f6f2e9;
+  --color-surface: #fffdf8;
+  --color-line: #e0d8c8;
+
+  /* インク */
+  --color-fg: #211d1a;
+  --color-fg-dim: #6f675e;
+  --color-fg-faint: #a89f91;
+
+  /* リソの特色。1 色に統一する */
+  --color-pink: #ff5c9a;
 
   --font-sans:
     'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'BIZ UDPGothic', Meiryo,
     system-ui, sans-serif;
+  --font-round:
+    'Hiragino Maru Gothic ProN', 'Zen Maru Gothic', 'Quicksand',
+    'Hiragino Kaku Gothic ProN', Meiryo, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Menlo', monospace;
 }
 
 html {
@@ -24,6 +34,18 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'palt';
+}
+
+/* 紙の粒子。全面に薄く重ねて印刷物の質感を出す */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
 }
 
 @media (prefers-reduced-motion: reduce) {
