@@ -101,6 +101,7 @@ const shareList = computed(() =>
         </button>
       </div>
 
+      
       <!-- 絞り込みと検索。一覧カードの外に置く -->
       <div class="mt-14">
         <FilterPanel
