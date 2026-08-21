@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GoogleSignInButton from './GoogleSignInButton.vue'
-import UserCircleIcon from './UserCircleIcon.vue'
-import { formatDate, formatElapsed } from '@/lib/format'
+import ChannelRow from './ChannelRow.vue'
+import type { SubscribedChannel } from '@/types/youtube'
 
 defineProps<{ configError: string | null; showMock?: boolean }>()
 const emit = defineEmits<{ start: []; mock: [] }>()
@@ -9,13 +9,21 @@ const emit = defineEmits<{ start: []; mock: [] }>()
 /**
  * 出力形式を示すためのサンプル。実データではない。
  * 実在のチャンネル名は使わず、明示的なダミー名を置く。
+ * 行の見た目が結果画面とずれないよう、描画には ChannelRow をそのまま使う。
  */
-const sample = [
-  { name: 'チャンネル A', date: new Date(2011, 3, 3) },
-  { name: 'チャンネル B', date: new Date(2014, 9, 20) },
-  { name: 'チャンネル C', date: new Date(2018, 5, 2) },
-  { name: 'チャンネル D', date: new Date(2021, 1, 14) },
-]
+const sample: SubscribedChannel[] = [
+  { name: 'チャンネル A', at: new Date(2011, 3, 3, 21, 14), open: new Date(2010, 7, 9) },
+  { name: 'チャンネル B', at: new Date(2014, 9, 20, 12, 38), open: new Date(2013, 2, 1) },
+  { name: 'チャンネル C', at: new Date(2018, 5, 2, 8, 5), open: new Date(2018, 3, 17) },
+  { name: 'チャンネル D', at: new Date(2021, 1, 14, 23, 47), open: new Date(2016, 10, 25) },
+].map((s, i) => ({
+  channelId: `sample-${i}`,
+  title: s.name,
+  thumbnailUrl: '',
+  publishedAt: s.at.toISOString(),
+  subscribedAt: s.at,
+  channelCreatedAt: s.open,
+}))
 </script>
 
 <template>
@@ -61,7 +69,7 @@ const sample = [
         />
         <p class="text-[12px] leading-[1.9] text-fg">
           ※データはサーバーに保存されません。<br />
-          ※ブラウザと Google の間だけで処理されます。
+          ※ブラウザとGoogleの間だけで処理されます。
         </p>
       </div>
 
@@ -75,33 +83,19 @@ const sample = [
       <!-- 表示例(チケット風) -->
       <!-- 左の余白 pl-6 はカードの角丸 24px と内側パディングに合わせている -->
       <p class="mt-16 mb-1.5 pl-6 font-round text-[12px] font-bold text-fg-dim">表示例</p>
+      <!-- padding は結果画面の一覧カードに合わせている -->
       <div
-        class="rounded-3xl border-2 border-fg bg-surface px-6 py-4 shadow-[5px_5px_0_var(--color-fg)]"
+        class="rounded-3xl border-2 border-fg bg-surface px-5 py-2 shadow-[5px_5px_0_var(--color-fg)]"
       >
         <ul>
-          <li
-            v-for="s in sample"
-            :key="s.date.getTime()"
-            class="flex items-center gap-3 border-b border-line py-3 last:border-0"
-          >
-            <UserCircleIcon class="size-8 shrink-0 text-fg-faint" />
-            <span class="min-w-0 flex-1 truncate text-[13px] text-fg-dim">
-              {{ s.name }}
-            </span>
-            <span class="shrink-0 text-right">
-              <span class="block font-mono text-[13px] tabular-nums">
-                {{ formatDate(s.date) }}
-              </span>
-              <span class="mt-0.5 block font-round text-[11px] text-fg-dim">
-                {{ formatElapsed(s.date) }}
-              </span>
-            </span>
-          </li>
+          <ChannelRow
+            v-for="(c, i) in sample"
+            :key="c.channelId"
+            :channel="c"
+            :rank="i + 1"
+            :linked="false"
+          />
         </ul>
-
-        <p class="mt-5 text-[11px] leading-relaxed text-fg-faint">
-          実際のデータではありません。ログインすると、あなたの登録チャンネルがこの形式で並びます。
-        </p>
       </div>
     </div>
   </section>

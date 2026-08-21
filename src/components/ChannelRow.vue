@@ -4,7 +4,15 @@ import UserCircleIcon from './UserCircleIcon.vue'
 import { formatDate, formatElapsed, formatSpan, formatTime } from '@/lib/format'
 import type { SubscribedChannel } from '@/types/youtube'
 
-const props = defineProps<{ channel: SubscribedChannel; rank: number }>()
+const props = withDefaults(
+  defineProps<{
+    channel: SubscribedChannel
+    rank: number
+    /** ダミーデータを並べる表示例では、飛び先がないので false にする */
+    linked?: boolean
+  }>(),
+  { linked: true },
+)
 
 /** 開設からどれだけ経ってから登録したか。開設日が未取得なら null */
 const sinceOpen = computed(() => {
@@ -35,6 +43,7 @@ const sinceOpen = computed(() => {
       />
       <UserCircleIcon v-else class="size-10 shrink-0 text-fg-faint" />
       <a
+        v-if="linked"
         :href="`https://www.youtube.com/channel/${channel.channelId}`"
         target="_blank"
         rel="noopener noreferrer"
@@ -42,6 +51,7 @@ const sinceOpen = computed(() => {
       >
         {{ channel.title }}
       </a>
+      <span v-else class="min-w-0 flex-1 truncate text-[14px]">{{ channel.title }}</span>
     </div>
 
     <!--
