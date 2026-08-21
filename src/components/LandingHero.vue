@@ -24,6 +24,15 @@ const sample: SubscribedChannel[] = [
   subscribedAt: s.at,
   channelCreatedAt: s.open,
 }))
+
+/** 機能の一覧。README の「できること」と揃えること */
+const features = [
+  '登録日の古い順・新しい順で並べ替え',
+  '最初に登録したチャンネルと、そこからの経過年数',
+  '年ごとの登録数をグラフで表示',
+  'チャンネル名・登録年・登録期間での絞り込み',
+  '結果を画像として書き出し',
+]
 </script>
 
 <template>
@@ -101,6 +110,47 @@ const sample: SubscribedChannel[] = [
             :linked="false"
           />
         </ul>
+      </div>
+
+      <!--
+        Google のブランディング確認が求める「機能の説明」「ユーザーデータを
+        要求する目的」「プライバシーポリシーへのリンク」をここで満たしている。
+        ファーストビューを変えたくないので、あえてページ下部に置いている。
+        位置の要件はなく、ログインせず読めることだけが条件。
+      -->
+      <p class="mt-16 mb-1.5 pl-6 font-round text-[12px] font-bold text-fg-dim">
+        このサービスについて
+      </p>
+      <div class="rounded-3xl border-2 border-fg bg-surface px-6 py-5">
+        <h2 class="font-round text-[13px] font-bold">できること</h2>
+        <ul class="mt-1">
+          <li
+            v-for="f in features"
+            :key="f"
+            class="border-b border-line py-2.5 text-[12px] leading-[1.8] text-fg-dim last:border-0"
+          >
+            {{ f }}
+          </li>
+        </ul>
+
+        <h2 class="mt-6 font-round text-[13px] font-bold">使用する権限</h2>
+        <p class="mt-2 text-[12px] leading-[1.9] text-fg-dim">
+          登録チャンネルの一覧と、それぞれの登録日を読み取るためだけに、YouTube
+          の読み取り専用の権限（youtube.readonly）を使用します。チャンネル登録の追加・削除はしません。
+        </p>
+
+        <h2 class="mt-6 font-round text-[13px] font-bold">データの扱い</h2>
+        <p class="mt-2 text-[12px] leading-[1.9] text-fg-dim">
+          取得したデータは利用者のブラウザ上でのみ処理され、サーバーには保存されません。運営者を含む第三者が受け取ることはありません。詳しくは
+          <RouterLink to="/privacy" class="underline underline-offset-2 hover:text-fg">
+            プライバシーポリシー
+          </RouterLink>
+          と
+          <RouterLink to="/terms" class="underline underline-offset-2 hover:text-fg">
+            利用規約
+          </RouterLink>
+          をご覧ください。
+        </p>
       </div>
     </div>
   </section>
