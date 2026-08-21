@@ -15,6 +15,11 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>()
 
 const frameRef = useTemplateRef<HTMLElement>('frame')
+/** プレビューに使える領域。ここの幅を基準に縮小率を決める */
+const areaRef = useTemplateRef<HTMLElement>('area')
+/** ボタン群。プレビューはこの高さを避けて収める */
+const controlsRef = useTemplateRef<HTMLElement>('controls')
+const rootRef = useTemplateRef<HTMLElement>('root')
 const avatars = ref<Record<string, string>>({})
 /** 書き出し済み PNG の data URL。長押し保存できるよう、これをプレビューに出す */
 const pngUrl = ref<string | null>(null)
@@ -60,37 +65,80 @@ function cardEl(): HTMLElement | null {
 }
 
 /**
- * プレビューの縮小率。カードは書き出しのために 360px 固定なので、
- * 画面が狭いときは transform で縮めて横スクロールを出さない。
+ * プレビューの縮小率。カードは書き出しのために 360×640 固定なので、
+ * 画面に入らないぶんは transform で縮める。
  * transform はカードを包む要素に掛ける。カード自身に掛けると書き出しに影響する。
  */
 const scale = ref(1)
-/** ShareCard の h-[640px] に合わせた初期値。マウント後に実測で上書きする */
+/** ShareCard の w-90 / h-[640px] に合わせた初期値。マウント後に実測で上書きする */
+const cardWidth = ref(360)
 const cardHeight = ref(640)
-/** 縮小してもレイアウト上の高さは元のままなので、枠側で詰める */
+/** 縮小してもレイアウト上の寸法は元のままなので、枠側で詰める */
+const previewWidth = computed(() => `${Math.round(cardWidth.value * scale.value)}px`)
 const previewHeight = computed(() => `${Math.round(cardHeight.value * scale.value)}px`)
 
-function fit() {
-  const frame = frameRef.value
-  const node = cardEl()
-  if (!frame || !node) return
-  // offsetWidth/offsetHeight は transform の影響を受けないので縮小中でも元の寸法が取れる
-  cardHeight.value = node.offsetHeight
-  scale.value = Math.min(1, frame.clientWidth / node.offsetWidth)
+/** 親の gap-6 ぶん。プレビューとボタン群の間隔 */
+const GAP = 24
+
+/**
+ * 実際に見えている高さ。
+ * iOS Safari の fixed 要素はツールバーが隠れた状態のレイアウトビューポート基準に
+ * なるので、clientHeight だけを見ると上下のツールバーぶんはみ出す。
+ * visualViewport はツールバー(とキーボード)を除いた高さを返すので、小さい方を採る。
+ */
+function visibleHeight(root: HTMLElement): number {
+  const visual = window.visualViewport?.height
+  return Math.min(root.clientHeight, visual ?? window.innerHeight)
 }
 
-let frameObserver: ResizeObserver | null = null
+function fit() {
+  const area = areaRef.value
+  const node = cardEl()
+  if (!area || !node) return
+
+  // offsetWidth/offsetHeight は transform の影響を受けないので縮小中でも元の寸法が取れる
+  cardWidth.value = node.offsetWidth
+  cardHeight.value = node.offsetHeight
+
+  const byWidth = area.clientWidth / node.offsetWidth
+
+  // ボタン群が画面外に出ないよう、残り高さにも収める
+  let byHeight = Infinity
+  const root = rootRef.value
+  const controls = controlsRef.value
+  if (root && controls) {
+    const style = getComputedStyle(root)
+    const padding = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
+    const room = visibleHeight(root) - padding - GAP - controls.offsetHeight
+    byHeight = room / node.offsetHeight
+  }
+
+  scale.value = Math.max(0.3, Math.min(1, byWidth, byHeight))
+}
+
+let observer: ResizeObserver | null = null
 
 onMounted(() => {
   fit()
-  const frame = frameRef.value
-  if (frame && typeof ResizeObserver !== 'undefined') {
-    frameObserver = new ResizeObserver(fit)
-    frameObserver.observe(frame)
+  // ツールバーの出入りは ResizeObserver に出ないので、visualViewport 側でも拾う
+  window.visualViewport?.addEventListener('resize', fit)
+  window.visualViewport?.addEventListener('scroll', fit)
+  window.addEventListener('orientationchange', fit)
+
+  if (typeof ResizeObserver === 'undefined') return
+  observer = new ResizeObserver(fit)
+  // 領域の幅と、メッセージ表示で伸縮するボタン群の高さの両方を見る
+  for (const el of [areaRef.value, controlsRef.value, rootRef.value]) {
+    if (el) observer.observe(el)
   }
 })
 
-onBeforeUnmount(() => frameObserver?.disconnect())
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  window.visualViewport?.removeEventListener('resize', fit)
+  window.visualViewport?.removeEventListener('scroll', fit)
+  window.removeEventListener('orientationchange', fit)
+})
 
 /** Event で reject されることもあるので、型を絞らず読める形にする */
 function describeError(error: unknown): string {
@@ -236,7 +284,8 @@ async function share() {
 
 <template>
   <div
-    class="fixed inset-0 z-50 flex justify-center overflow-x-hidden overflow-y-auto bg-fg/80 p-4 sm:p-6"
+    ref="root"
+    class="fixed inset-0 z-50 flex justify-center overflow-x-hidden overflow-y-auto bg-fg/80 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
     role="dialog"
     aria-modal="true"
     aria-label="画像の書き出し"
@@ -244,35 +293,38 @@ async function share() {
   >
     <!-- min-w-0 は、枠の中の 360px のカードが幅を押し広げないようにするため -->
     <div class="my-auto flex w-full max-w-90 min-w-0 flex-col items-center gap-6">
-      <!-- 縮小したカードのはみ出しを隠す枠。幅は親に追従する -->
-      <div
-        ref="frame"
-        class="relative w-full overflow-hidden"
-        :style="{ height: previewHeight }"
-      >
-        <div :style="{ transform: `scale(${scale})`, transformOrigin: 'top left' }">
-          <ShareCard
-            data-share-card
-            :stats="stats"
-            :list="list"
-            :list-label="listLabel"
-            :avatars="avatars"
+      <!-- 縮小率の基準になる領域。枠はこの中で中央に置く -->
+      <div ref="area" class="flex w-full justify-center">
+        <!-- 縮小したカードのはみ出しを隠す枠 -->
+        <div
+          ref="frame"
+          class="relative overflow-hidden"
+          :style="{ width: previewWidth, height: previewHeight }"
+        >
+          <div :style="{ transform: `scale(${scale})`, transformOrigin: 'top left' }">
+            <ShareCard
+              data-share-card
+              :stats="stats"
+              :list="list"
+              :list-label="listLabel"
+              :avatars="avatars"
+            />
+          </div>
+
+          <!--
+            書き出した PNG をプレビューに重ねる。実体が img なので、
+            スマホでは長押しから「写真に追加」で保存できる
+          -->
+          <img
+            v-if="pngUrl"
+            :src="pngUrl"
+            alt="書き出した画像。長押しで保存できます"
+            class="absolute inset-0 h-full w-full"
           />
         </div>
-
-        <!--
-          書き出した PNG をプレビューに重ねる。実体が img なので、
-          スマホでは長押しから「写真に追加」で保存できる
-        -->
-        <img
-          v-if="pngUrl"
-          :src="pngUrl"
-          alt="書き出した画像。長押しで保存できます"
-          class="absolute inset-0 h-full w-full"
-        />
       </div>
 
-      <div class="flex w-full flex-col items-center gap-4 pb-4">
+      <div ref="controls" class="flex w-full flex-col items-center gap-4 pb-4">
         <p v-if="message" class="font-round text-[11px] text-base">{{ message }}</p>
         <p v-else-if="pngUrl" class="font-round text-[11px] text-base">
           画像を長押しでも保存できるよ

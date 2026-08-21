@@ -47,26 +47,34 @@ const GRAIN =
       <template v-if="stats.oldest">
         <!-- pl-5 はカードの角丸 20px に合わせている -->
         <p class="mt-6 mb-1.5 pl-5 font-round text-[11px] font-bold text-fg-dim">最初の登録</p>
-        <div
-          class="rounded-[20px] border-2 border-fg bg-surface px-5 py-4 shadow-[4px_4px_0_var(--color-fg)]"
-        >
-          <div class="flex items-center gap-2.5">
-            <img
-              v-if="avatars[stats.oldest.channelId]"
-              :src="avatars[stats.oldest.channelId]"
-              alt=""
-              class="size-8 shrink-0 rounded-full bg-base object-cover"
-            />
-            <UserCircleIcon v-else class="size-8 shrink-0 text-fg-faint" />
-            <span class="min-w-0 flex-1 truncate text-[13px]">{{ stats.oldest.title }}</span>
-          </div>
+        <!--
+          影は box-shadow ではなく実要素で敷く。foreignObject 経由の書き出しでは
+          Safari が box-shadow の角丸を落とし、角ばった影になってしまうため。
+        -->
+        <div class="relative">
+          <div
+            aria-hidden="true"
+            class="absolute inset-0 translate-x-1 translate-y-1 rounded-[20px] bg-fg"
+          />
+          <div class="relative rounded-[20px] border-2 border-fg bg-surface px-5 py-4">
+            <div class="flex items-center gap-2.5">
+              <img
+                v-if="avatars[stats.oldest.channelId]"
+                :src="avatars[stats.oldest.channelId]"
+                alt=""
+                class="size-8 shrink-0 rounded-full bg-base object-cover"
+              />
+              <UserCircleIcon v-else class="size-8 shrink-0 text-fg-faint" />
+              <span class="min-w-0 flex-1 truncate text-[13px]">{{ stats.oldest.title }}</span>
+            </div>
 
-          <p class="mt-4 font-mono text-[30px] leading-none font-medium tabular-nums">
-            {{ formatDate(stats.oldest.subscribedAt) }}
-          </p>
-          <p class="mt-3.5 font-round text-[12px] text-fg-dim">
-            {{ formatElapsed(stats.oldest.subscribedAt) }}
-          </p>
+            <p class="mt-4 font-mono text-[30px] leading-none font-medium tabular-nums">
+              {{ formatDate(stats.oldest.subscribedAt) }}
+            </p>
+            <p class="mt-3.5 font-round text-[12px] text-fg-dim">
+              {{ formatElapsed(stats.oldest.subscribedAt) }}
+            </p>
+          </div>
         </div>
       </template>
 
