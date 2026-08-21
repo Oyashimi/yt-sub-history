@@ -11,7 +11,8 @@
         </RouterLink>
       </nav>
       <p>
-        本サービスは YouTube API Services を利用しています。ご利用にあたっては
+        本サービスは YouTube API Services を利用しています。<br />
+        ご利用にあたっては
         <a
           href="https://www.youtube.com/t/terms"
           target="_blank"

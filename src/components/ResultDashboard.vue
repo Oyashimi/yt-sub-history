@@ -5,12 +5,10 @@ import YearChart from './YearChart.vue'
 import ChannelRow from './ChannelRow.vue'
 import ShareCardModal from './ShareCardModal.vue'
 import { useSubscriptions } from '@/composables/useSubscriptions'
-import { MAX_PAGES, PAGE_SIZE } from '@/lib/youtube'
 
 const emit = defineEmits<{ logout: [] }>()
 
-const { channels, visibleChannels, stats, sortOrder, keyword, truncated } =
-  useSubscriptions()
+const { channels, visibleChannels, stats, sortOrder, keyword } = useSubscriptions()
 
 const showShare = ref(false)
 const top5 = computed(() =>
@@ -66,10 +64,6 @@ const top5 = computed(() =>
           画像を書き出す
         </button>
       </div>
-
-      <p v-if="truncated" class="mt-8 text-xs leading-loose text-fg-dim">
-        登録数が多いため、古い順に {{ MAX_PAGES * PAGE_SIZE }} 件までを表示しています。
-      </p>
 
       <!-- 一覧 -->
       <div class="mt-16 flex items-center justify-between gap-4 border-b border-line pb-3">

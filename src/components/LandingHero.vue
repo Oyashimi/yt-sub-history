@@ -16,17 +16,6 @@ const sample = [
   { name: 'チャンネル C', date: new Date(2018, 5, 2) },
   { name: 'チャンネル D', date: new Date(2021, 1, 14) },
 ]
-
-const notes = [
-  {
-    label: 'データ',
-    body: 'このサイトにサーバーはありません。チャンネル登録の情報はブラウザと Google の間だけでやり取りされ、運営者を含む第三者が受け取ることはありません。',
-  },
-  {
-    label: '注意',
-    body: '取得できるのは古い順に 1,000 件までです。登録日は YouTube API が返す値のため、初期の登録では実際とずれる場合があります。',
-  },
-]
 </script>
 
 <template>
@@ -36,7 +25,7 @@ const notes = [
       <h1
         class="text-center font-round text-[clamp(1.375rem,6.7vw,2.5rem)] leading-[1.3] font-bold tracking-tight"
       >
-        チャンネル<wbr />登録日チェッカー
+        チャンネル登録日チェッカー
       </h1>
 
       <p class="mx-auto mt-5 max-w-md text-center text-[14px] leading-[2] text-fg-dim">
@@ -45,6 +34,24 @@ const notes = [
 
       <div class="mt-9 text-center">
         <GoogleSignInButton @click="emit('start')" />
+      </div>
+
+      <!-- 権限を渡すか判断する場所なので、安全性の説明はボタン直下に置く -->
+      <div
+        class="relative mx-auto mt-7 max-w-sm rounded-2xl border border-fg bg-surface px-5 py-4 text-center"
+      >
+        <!--
+          吹き出しの尻尾。45 度回した正方形の 2 辺だけに枠線を付ける。
+          背景色で親の上辺を塗り潰す仕組みなので bg は不透明であること。
+        -->
+        <span
+          aria-hidden="true"
+          class="absolute -top-[9px] left-1/2 size-4 -translate-x-1/2 rotate-45 border-t border-l border-fg bg-surface"
+        />
+        <p class="text-[12px] leading-[1.9] text-fg">
+          ※データはサーバーに保存されません。<br />
+          ※ブラウザと Google の間だけで処理されます。
+        </p>
       </div>
 
       <p
@@ -85,18 +92,6 @@ const notes = [
           実際のデータではありません。ログインすると、あなたの登録チャンネルがこの形式で並びます。
         </p>
       </div>
-
-      <!-- 注記 -->
-      <dl class="mt-10 space-y-3">
-        <div
-          v-for="n in notes"
-          :key="n.label"
-          class="rounded-2xl border-2 border-line bg-surface/60 px-5 py-4"
-        >
-          <dt class="font-round text-[12px] font-bold">{{ n.label }}</dt>
-          <dd class="mt-2 text-[12px] leading-[1.95] text-fg-dim">{{ n.body }}</dd>
-        </div>
-      </dl>
     </div>
   </section>
 </template>

@@ -8,8 +8,18 @@ import type {
 
 const ENDPOINT = 'https://www.googleapis.com/youtube/v3/subscriptions'
 
-/** 1 ページ 50 件 × 20 ページ = 最大 1,000 件で打ち切る */
-export const MAX_PAGES = 20
+/**
+ * 1 ページ 50 件 × 40 ページ = 最大 2,000 件で打ち切る。
+ *
+ * subscriptions.list に「古い順」の order は無く、既定は関連度順。
+ * つまり打ち切りが発生すると「最古の登録」が取りこぼされうる。
+ * YouTube の登録上限が 2,000 チャンネルなので、そこまで取り切れば
+ * 実質的に打ち切りは起きない。
+ *
+ * クォータは 1 ページ = 1 ユニットだが、ページは必要な分しか取らないため
+ * 上限を上げても登録数が少ないユーザーの消費は増えない。
+ */
+export const MAX_PAGES = 40
 export const PAGE_SIZE = 50
 
 export interface FetchProgress {
