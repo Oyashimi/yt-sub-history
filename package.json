@@ -1,0 +1,32 @@
+{
+  "name": "yt-sub-history",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Oyashimi/yt-sub-history.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/gapi": "^0.0.47",
+    "@types/google.accounts": "^0.0.18",
+    "@types/node": "^26.2.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9",
+    "vite": "^8.2.2",
+    "vue-tsc": "^3.3.10"
+  }
+}
