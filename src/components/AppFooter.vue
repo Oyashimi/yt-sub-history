@@ -1,14 +1,14 @@
 <template>
-  <footer class="border-t border-ink-line/80 mt-20">
-    <div
-      class="mx-auto max-w-3xl px-5 py-8 text-xs leading-relaxed text-cream/50 space-y-3"
-    >
-      <nav class="flex flex-wrap gap-x-5 gap-y-2">
-        <RouterLink to="/" class="hover:text-cream transition">ホーム</RouterLink>
-        <RouterLink to="/privacy" class="hover:text-cream transition"
-          >プライバシーポリシー</RouterLink
-        >
-        <RouterLink to="/terms" class="hover:text-cream transition">利用規約</RouterLink>
+  <footer class="mt-24 border-t border-line">
+    <div class="mx-auto max-w-xl space-y-4 px-6 py-10 text-[11px] leading-loose text-fg-faint">
+      <nav class="flex flex-wrap gap-x-5 gap-y-1">
+        <RouterLink to="/" class="transition-colors hover:text-fg-dim">ホーム</RouterLink>
+        <RouterLink to="/privacy" class="transition-colors hover:text-fg-dim">
+          プライバシーポリシー
+        </RouterLink>
+        <RouterLink to="/terms" class="transition-colors hover:text-fg-dim">
+          利用規約
+        </RouterLink>
       </nav>
       <p>
         本サービスは YouTube API Services を利用しています。ご利用にあたっては
@@ -16,7 +16,7 @@
           href="https://www.youtube.com/t/terms"
           target="_blank"
           rel="noopener noreferrer"
-          class="underline hover:text-cream"
+          class="underline underline-offset-2 hover:text-fg-dim"
           >YouTube 利用規約</a
         >
         および
@@ -24,12 +24,12 @@
           href="https://policies.google.com/privacy"
           target="_blank"
           rel="noopener noreferrer"
-          class="underline hover:text-cream"
+          class="underline underline-offset-2 hover:text-fg-dim"
           >Google プライバシーポリシー</a
         >
         が適用されます。
       </p>
-      <p>本サービスは Google および YouTube とは提携していない個人開発の非公式サービスです。</p>
+      <p>本サービスは Google および YouTube とは提携していない非公式のサービスです。</p>
     </div>
   </footer>
 </template>

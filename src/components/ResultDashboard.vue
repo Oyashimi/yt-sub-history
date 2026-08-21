@@ -21,30 +21,28 @@ const top5 = computed(() =>
 </script>
 
 <template>
-  <section class="mx-auto max-w-3xl px-5 py-10">
+  <section class="mx-auto max-w-xl px-6 py-16">
     <!-- 空状態 -->
-    <div v-if="stats.total === 0" class="py-20 text-center">
-      <p class="text-5xl">🫧</p>
-      <h2 class="mt-5 text-2xl font-black">登録チャンネルが見つかりませんでした</h2>
-      <p class="mt-3 text-sm leading-relaxed text-cream/65">
-        別の Google アカウントでログインしているかもしれません。<br />
-        ログアウトして、YouTube を使っているアカウントで試してみてください。
+    <div v-if="stats.total === 0">
+      <h2 class="text-base font-medium">登録チャンネルが見つかりませんでした</h2>
+      <p class="mt-3 text-sm leading-loose text-fg-dim">
+        別の Google アカウントでログインしている可能性があります。
       </p>
       <button
         type="button"
-        class="mt-8 rounded-full border border-ink-line px-6 py-3 text-sm font-bold text-cream/80 transition hover:text-cream"
+        class="mt-8 border border-line bg-surface px-5 py-2.5 text-sm transition-colors hover:border-fg-faint"
         @click="emit('logout')"
       >
-        ログアウトしてやり直す
+        ログアウト
       </button>
     </div>
 
     <template v-else>
-      <header class="flex items-start justify-between gap-4">
-        <h1 class="text-2xl font-black">あなたの登録履歴</h1>
+      <header class="flex items-baseline justify-between gap-4">
+        <h1 class="text-xs text-fg-dim">登録チャンネル</h1>
         <button
           type="button"
-          class="shrink-0 rounded-full border border-ink-line px-4 py-2 text-xs font-bold text-cream/60 transition hover:text-cream"
+          class="shrink-0 text-xs text-fg-faint underline underline-offset-4 transition-colors hover:text-fg"
           @click="emit('logout')"
         >
           ログアウト
@@ -55,43 +53,39 @@ const top5 = computed(() =>
         <HighlightStats :stats="stats" />
       </div>
 
-      <div class="mt-4">
-        <button
-          type="button"
-          class="w-full rounded-2xl bg-gradient-to-r from-flame to-gold px-6 py-4 text-base font-black text-ink shadow-lg shadow-black/40 transition hover:brightness-110"
-          @click="showShare = true"
-        >
-          🖼 シェアカードを作る
-        </button>
-      </div>
-
-      <div class="mt-4">
+      <div class="mt-12">
         <YearChart :buckets="stats.byYear" />
       </div>
 
-      <p
-        v-if="truncated"
-        class="mt-4 rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-xs leading-relaxed text-gold"
-      >
-        登録チャンネルが非常に多いため、古い順に {{ MAX_PAGES * PAGE_SIZE }} 件までを
-        表示しています。
+      <div class="mt-12">
+        <button
+          type="button"
+          class="border border-line bg-surface px-5 py-2.5 text-sm transition-colors hover:border-fg-faint"
+          @click="showShare = true"
+        >
+          画像を書き出す
+        </button>
+      </div>
+
+      <p v-if="truncated" class="mt-8 text-xs leading-loose text-fg-dim">
+        登録数が多いため、古い順に {{ MAX_PAGES * PAGE_SIZE }} 件までを表示しています。
       </p>
 
       <!-- 一覧 -->
-      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="inline-flex rounded-full border border-ink-line p-1 text-xs font-bold">
+      <div class="mt-16 flex items-center justify-between gap-4 border-b border-line pb-3">
+        <div class="flex items-center gap-4 text-xs">
           <button
             type="button"
-            class="rounded-full px-4 py-1.5 transition"
-            :class="sortOrder === 'oldest' ? 'bg-cream text-ink' : 'text-cream/60'"
+            class="transition-colors"
+            :class="sortOrder === 'oldest' ? 'text-fg' : 'text-fg-faint hover:text-fg-dim'"
             @click="sortOrder = 'oldest'"
           >
             古い順
           </button>
           <button
             type="button"
-            class="rounded-full px-4 py-1.5 transition"
-            :class="sortOrder === 'newest' ? 'bg-cream text-ink' : 'text-cream/60'"
+            class="transition-colors"
+            :class="sortOrder === 'newest' ? 'text-fg' : 'text-fg-faint hover:text-fg-dim'"
             @click="sortOrder = 'newest'"
           >
             新しい順
@@ -100,14 +94,12 @@ const top5 = computed(() =>
         <input
           v-model="keyword"
           type="search"
-          placeholder="チャンネル名で絞り込む"
-          class="w-full rounded-full border border-ink-line bg-ink-soft/70 px-4 py-2 text-sm outline-none transition placeholder:text-cream/35 focus:border-cream/40 sm:w-64"
+          placeholder="絞り込む"
+          class="w-32 border-b border-line bg-transparent pb-1 text-xs outline-none transition-colors placeholder:text-fg-faint focus:border-fg-dim sm:w-40"
         />
       </div>
 
-      <p class="mt-3 text-xs text-cream/45">{{ visibleChannels.length }} 件を表示中</p>
-
-      <ul class="mt-3 space-y-2">
+      <ul>
         <ChannelRow
           v-for="(c, i) in visibleChannels"
           :key="c.channelId"
@@ -116,8 +108,8 @@ const top5 = computed(() =>
         />
       </ul>
 
-      <p class="mt-8 text-center text-xs leading-relaxed text-cream/40">
-        登録日は YouTube API が返す値です。ごく初期の登録では日時が実際とずれる場合があるため、参考値としてご覧ください。
+      <p class="mt-10 text-xs leading-loose text-fg-faint">
+        登録日は YouTube API が返す値です。初期の登録では実際の日時とずれる場合があります。
       </p>
     </template>
 

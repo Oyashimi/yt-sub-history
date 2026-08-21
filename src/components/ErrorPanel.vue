@@ -6,31 +6,29 @@ const props = defineProps<{ kind: AppErrorKind; detail?: string | null }>()
 const emit = defineEmits<{ retry: []; back: [] }>()
 
 const msg = computed(() => messageFor(props.kind))
-const emoji = computed(() => (props.kind === 'quotaExceeded' ? '🍵' : '⚠️'))
 </script>
 
 <template>
-  <section class="mx-auto max-w-md px-5 py-24 text-center">
-    <p class="text-5xl">{{ emoji }}</p>
-    <h2 class="mt-5 text-2xl font-black">{{ msg.title }}</h2>
-    <p class="mt-3 text-sm leading-relaxed text-cream/65">{{ msg.body }}</p>
-    <p v-if="detail" class="mt-3 text-xs text-cream/40">{{ detail }}</p>
+  <section class="mx-auto max-w-xl px-6 pt-40 pb-16">
+    <h2 class="text-base font-medium">{{ msg.title }}</h2>
+    <p class="mt-3 text-sm leading-loose text-fg-dim">{{ msg.body }}</p>
+    <p v-if="detail" class="mt-3 text-xs leading-relaxed text-fg-faint">{{ detail }}</p>
 
-    <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+    <div class="mt-10 flex gap-3">
       <button
         v-if="kind !== 'quotaExceeded'"
         type="button"
-        class="rounded-full bg-cream px-6 py-3 text-sm font-bold text-ink transition hover:-translate-y-0.5"
+        class="border border-line bg-surface px-5 py-2.5 text-sm transition-colors hover:border-fg-faint"
         @click="emit('retry')"
       >
-        もう一度試す
+        再試行
       </button>
       <button
         type="button"
-        class="rounded-full border border-ink-line px-6 py-3 text-sm font-bold text-cream/80 transition hover:border-cream/40 hover:text-cream"
+        class="px-1 py-2.5 text-sm text-fg-dim underline underline-offset-4 transition-colors hover:text-fg"
         @click="emit('back')"
       >
-        トップに戻る
+        最初に戻る
       </button>
     </div>
   </section>

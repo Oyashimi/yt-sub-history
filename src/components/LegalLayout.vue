@@ -3,11 +3,16 @@ defineProps<{ title: string; updatedAt: string }>()
 </script>
 
 <template>
-  <article class="mx-auto max-w-2xl px-5 py-14">
-    <RouterLink to="/" class="text-xs text-cream/50 hover:text-cream">← トップへ戻る</RouterLink>
-    <h1 class="mt-4 text-3xl font-black">{{ title }}</h1>
-    <p class="mt-2 text-xs text-cream/45">最終更新: {{ updatedAt }}</p>
-    <div class="legal mt-8 space-y-6 text-sm leading-relaxed text-cream/75">
+  <article class="mx-auto max-w-xl px-6 py-16">
+    <RouterLink
+      to="/"
+      class="text-xs text-fg-faint underline underline-offset-4 transition-colors hover:text-fg-dim"
+    >
+      戻る
+    </RouterLink>
+    <h1 class="mt-8 text-xl font-medium">{{ title }}</h1>
+    <p class="mt-2 text-xs text-fg-faint">最終更新: {{ updatedAt }}</p>
+    <div class="legal mt-10 space-y-5 text-sm leading-loose text-fg-dim">
       <slot />
     </div>
   </article>
@@ -15,10 +20,10 @@ defineProps<{ title: string; updatedAt: string }>()
 
 <style scoped>
 .legal :deep(h2) {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--color-cream);
-  margin-top: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg);
+  margin-top: 2.5rem;
 }
 .legal :deep(ul) {
   list-style: disc;
@@ -29,8 +34,14 @@ defineProps<{ title: string; updatedAt: string }>()
 }
 .legal :deep(a) {
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .legal :deep(a:hover) {
-  color: var(--color-cream);
+  color: var(--color-fg);
+}
+.legal :deep(code) {
+  font-size: 0.8125rem;
+  color: var(--color-fg);
+  word-break: break-all;
 }
 </style>

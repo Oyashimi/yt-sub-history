@@ -19,10 +19,3 @@ export async function toDataUrl(url: string): Promise<string | null> {
     return null
   }
 }
-
-/** 文字列から安定した色相を作る(サムネ取得に失敗したときのフォールバック用) */
-export function hueFromString(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360
-  return h
-}

@@ -10,8 +10,8 @@ export interface Stats {
   total: number
   oldest: SubscribedChannel | null
   newest: SubscribedChannel | null
-  /** 最古の登録からの経過年数 */
-  veteranYears: number
+  /** 最古の登録から現在までの経過年数 */
+  yearsSinceOldest: number
   /** 登録から 10 年以上のチャンネル */
   overTenYears: SubscribedChannel[]
   /** 登録から 5 年以上のチャンネル */
@@ -31,7 +31,7 @@ export function buildStats(
       total: 0,
       oldest: null,
       newest: null,
-      veteranYears: 0,
+      yearsSinceOldest: 0,
       overTenYears: [],
       overFiveYears: [],
       byYear: [],
@@ -67,21 +67,10 @@ export function buildStats(
     total: sorted.length,
     oldest,
     newest,
-    veteranYears: elapsedYears(oldest.subscribedAt, now),
+    yearsSinceOldest: elapsedYears(oldest.subscribedAt, now),
     overTenYears: sorted.filter((c) => elapsedYears(c.subscribedAt, now) >= 10),
     overFiveYears: sorted.filter((c) => elapsedYears(c.subscribedAt, now) >= 5),
     byYear,
     busiestYear,
   }
-}
-
-/** 古参度の称号 */
-export function veteranTitle(years: number): { label: string; emoji: string } {
-  if (years >= 15) return { label: '化石級古参', emoji: '🦕' }
-  if (years >= 12) return { label: 'レジェンド古参', emoji: '👑' }
-  if (years >= 10) return { label: '十年選手', emoji: '🏆' }
-  if (years >= 7) return { label: 'ベテラン', emoji: '🥇' }
-  if (years >= 5) return { label: '中堅', emoji: '🥈' }
-  if (years >= 3) return { label: '常連', emoji: '🥉' }
-  return { label: 'フレッシュ', emoji: '🌱' }
 }

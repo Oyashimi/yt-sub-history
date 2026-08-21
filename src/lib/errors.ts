@@ -29,8 +29,8 @@ export function messageFor(kind: AppErrorKind): { title: string; body: string } 
       }
     case 'quotaExceeded':
       return {
-        title: '本日分の解析上限に達しました',
-        body: '想定以上のアクセスをいただいています。上限は毎日 17:00(日本時間)ごろにリセットされます。また明日来てね。',
+        title: '本日分の利用上限に達しました',
+        body: 'YouTube API の 1 日あたりの上限に達しています。上限は毎日 17:00(日本時間)ごろにリセットされます。時間をおいてお試しください。',
       }
     case 'forbidden':
       return {

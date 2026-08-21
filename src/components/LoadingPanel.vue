@@ -12,22 +12,16 @@ const percent = computed(() => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-md px-5 py-28 text-center">
-    <div
-      class="mx-auto size-14 animate-spin rounded-full border-4 border-ink-line border-t-gold"
-      role="status"
-      aria-label="読み込み中"
-    />
-    <p class="mt-8 text-lg font-bold">登録チャンネルを掘り起こしています…</p>
-    <p class="mt-2 text-sm text-cream/60">
-      {{ progress.loaded }} 件取得済み<span v-if="progress.total">
-        / 全 {{ progress.total }} 件</span
-      >
+  <section class="mx-auto max-w-xl px-6 pt-40 pb-16">
+    <p class="text-sm text-fg-dim">読み込んでいます</p>
+    <p class="mt-2 text-sm tabular-nums text-fg">
+      {{ progress.loaded }}<span v-if="progress.total"> / {{ progress.total }}</span> 件
     </p>
 
-    <div v-if="percent !== null" class="mt-5 h-2 overflow-hidden rounded-full bg-ink-line">
+    <div class="mt-6 h-px w-full bg-line" role="status" aria-label="読み込み中">
       <div
-        class="h-full rounded-full bg-gradient-to-r from-flame to-gold transition-[width] duration-300"
+        v-if="percent !== null"
+        class="h-px bg-fg-dim transition-[width] duration-300"
         :style="{ width: `${percent}%` }"
       />
     </div>
