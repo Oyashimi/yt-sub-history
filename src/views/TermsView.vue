@@ -59,5 +59,11 @@ import LegalLayout from '@/components/LegalLayout.vue'
     <p>
       本規約は日本法に準拠し、本サービスに関して紛争が生じた場合は、運営者の所在地を管轄する裁判所を第一審の専属的合意管轄裁判所とします。
     </p>
+
+    <h2>8. お問い合わせ</h2>
+    <p>
+      本規約に関するお問い合わせは、
+      <a href="mailto:support@oyashimi.com">support@oyashimi.com</a> までご連絡ください。
+    </p>
   </LegalLayout>
 </template>

@@ -78,6 +78,9 @@ import LegalLayout from '@/components/LegalLayout.vue'
     </p>
 
     <h2>8. お問い合わせ</h2>
-    <p>本ポリシーに関するお問い合わせは、本サービスの公開元までご連絡ください。</p>
+    <p>
+      本ポリシーおよび本サービスにおける情報の取り扱いに関するお問い合わせは、
+      <a href="mailto:support@oyashimi.com">support@oyashimi.com</a> までご連絡ください。
+    </p>
   </LegalLayout>
 </template>

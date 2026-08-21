@@ -62,3 +62,8 @@ Google LLC および YouTube とは提携していません。個人が開発・
 本サービスは YouTube API Services を利用しています。ご利用にあたっては
 [YouTube 利用規約](https://www.youtube.com/t/terms) と
 [Google プライバシーポリシー](https://policies.google.com/privacy) が適用されます。
+
+## サードパーティのライセンス
+
+アイコンに [Tabler Icons](https://tabler.io/icons)（MIT License / © 2020-2026 Paweł Kuna）を
+使用しています。全文は [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) にあります。

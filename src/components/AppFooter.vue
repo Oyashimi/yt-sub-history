@@ -30,6 +30,18 @@
         >
         が適用されます。
       </p>
+      <!-- MIT は著作権表示の保持を求めているため、配信物にも出す -->
+      <p>
+        アイコンは
+        <a
+          href="https://tabler.io/icons"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline underline-offset-2 hover:text-fg-dim"
+          >Tabler Icons</a
+        >
+        （MIT License / © 2020-2026 Paweł Kuna）を使用しています。
+      </p>
     </div>
   </footer>
 </template>

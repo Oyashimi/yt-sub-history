@@ -1,3 +1,7 @@
+<!--
+  Tabler Icons の user-circle。MIT License / © 2020-2026 Paweł Kuna
+  https://tabler.io/icons — 表記は THIRD-PARTY-NOTICES.md とフッターにある
+-->
 <template>
   <svg
     xmlns="http://www.w3.org/2000/svg"
