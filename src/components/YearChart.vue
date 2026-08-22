@@ -20,8 +20,8 @@ const isOn = (year: number) => axisHit(props.filter, year) === true
       <span class="ml-1 font-normal text-fg-faint">グラフをクリックで年を選択できるよ</span>
     </p>
 
-    <div class="rounded-3xl border-2 border-fg bg-surface px-5 pt-5 pb-4">
-      <ul class="flex items-stretch gap-[3px]">
+    <div class="rounded-3xl border-2 border-fg bg-surface px-5 pt-5 pb-4 lg:px-7 lg:pt-7 lg:pb-5">
+      <ul class="flex items-stretch gap-[3px] lg:gap-1">
         <li v-for="b in buckets" :key="b.year" class="flex-1">
           <button
             type="button"
@@ -30,7 +30,7 @@ const isOn = (year: number) => axisHit(props.filter, year) === true
             :aria-label="`${b.year}年 ${b.count}件`"
             @click="emit('select', b.year)"
           >
-            <span class="flex h-28 w-full items-end justify-center">
+            <span class="flex h-28 w-full items-end justify-center lg:h-48">
               <span
                 class="w-full max-w-11 rounded-sm bg-fg transition-opacity"
                 :class="
@@ -42,7 +42,7 @@ const isOn = (year: number) => axisHit(props.filter, year) === true
               />
             </span>
             <span
-              class="pt-2 font-mono text-[8px] tabular-nums transition-colors sm:text-[9px]"
+              class="pt-2 font-mono text-[8px] tabular-nums transition-colors sm:text-[9px] lg:text-[10px]"
               :class="
                 isOn(b.year) ? 'font-bold text-fg' : 'text-fg-faint'
               "

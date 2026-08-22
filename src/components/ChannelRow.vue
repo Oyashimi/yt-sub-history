@@ -25,52 +25,63 @@ const sinceOpen = computed(() => {
 <template>
   <li class="border-b border-line py-4 last:border-0">
     <!--
-      1 行目: 連番・アイコン・チャンネル名。
-      下線は行間の区切り(border-line)より意図的に弱くしている。
-      同じ強さだと「行の区切り」と混ざって、リストが 2 倍の行数に見えるため。
+      既定は 2 段(名前 / 日付)。
+      置かれたカードが十分に広いときだけ、日付を名前の右に寄せて 1 行に収める。
+      判定は画面幅ではなくカード幅(@container)で行う。同じ行を、幅いっぱいの
+      一覧と、幅が半分しかない表示例の両方で使い回しているため。
     -->
-    <div class="flex items-center gap-3.5 border-b border-line/50 pb-3">
-      <span class="w-5 shrink-0 text-right font-mono text-[10px] tabular-nums text-fg-faint">
-        {{ rank }}
-      </span>
-      <img
-        v-if="channel.thumbnailUrl"
-        :src="channel.thumbnailUrl"
-        alt=""
-        loading="lazy"
-        referrerpolicy="no-referrer"
-        class="size-10 shrink-0 rounded-full bg-base object-cover"
-      />
-      <UserCircleIcon v-else class="size-10 shrink-0 text-fg-faint" />
-      <a
-        v-if="linked"
-        :href="`https://www.youtube.com/channel/${channel.channelId}`"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="min-w-0 flex-1 truncate text-[14px] hover:underline"
+    <div class="@2xl:flex @2xl:items-center @2xl:gap-5">
+      <!--
+        名前の段。
+        下線は行間の区切り(border-line)より意図的に弱くしている。
+        同じ強さだと「行の区切り」と混ざって、リストが 2 倍の行数に見えるため。
+        1 行に収まるときは段を分ける必要がないので消す。
+      -->
+      <div
+        class="flex items-center gap-3.5 border-b border-line/50 pb-3 @2xl:min-w-0 @2xl:flex-1 @2xl:border-0 @2xl:pb-0"
       >
-        {{ channel.title }}
-      </a>
-      <span v-else class="min-w-0 flex-1 truncate text-[14px]">{{ channel.title }}</span>
-    </div>
+        <span class="w-5 shrink-0 text-right font-mono text-[10px] tabular-nums text-fg-faint">
+          {{ rank }}
+        </span>
+        <img
+          v-if="channel.thumbnailUrl"
+          :src="channel.thumbnailUrl"
+          alt=""
+          loading="lazy"
+          referrerpolicy="no-referrer"
+          class="size-10 shrink-0 rounded-full bg-base object-cover"
+        />
+        <UserCircleIcon v-else class="size-10 shrink-0 text-fg-faint" />
+        <a
+          v-if="linked"
+          :href="`https://www.youtube.com/channel/${channel.channelId}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="min-w-0 flex-1 truncate text-[14px] hover:underline"
+        >
+          {{ channel.title }}
+        </a>
+        <span v-else class="min-w-0 flex-1 truncate text-[14px]">{{ channel.title }}</span>
+      </div>
 
-    <!--
-      2 行目以降: 日付。pl-22(88px) はチャンネル名の左端に合わせた値で、
-      内訳は 連番 20px + gap 14px + アイコン 40px + gap 14px。
-      上の 3 つのどれかを変えたらここも合わせること。
-    -->
-    <div class="pt-3 pl-22">
-      <time
-        :datetime="channel.publishedAt"
-        class="block font-mono text-[13px] tabular-nums"
-      >
-        {{ formatDate(channel.subscribedAt) }}
-        <span class="text-fg-dim">{{ formatTime(channel.subscribedAt) }}</span>
-      </time>
-      <p class="mt-1 text-[10px] text-fg-faint">
-        <span v-if="sinceOpen">開設から{{ sinceOpen }}後 ・ </span>
-        {{ formatElapsed(channel.subscribedAt) }}
-      </p>
+      <!--
+        日付の段。pl-22(88px) はチャンネル名の左端に合わせた値で、
+        内訳は 連番 20px + gap 14px + アイコン 40px + gap 14px。
+        上の 3 つのどれかを変えたらここも合わせること。
+      -->
+      <div class="pt-3 pl-22 @2xl:shrink-0 @2xl:pt-0 @2xl:pl-0 @2xl:text-right">
+        <time
+          :datetime="channel.publishedAt"
+          class="block font-mono text-[13px] tabular-nums"
+        >
+          {{ formatDate(channel.subscribedAt) }}
+          <span class="text-fg-dim">{{ formatTime(channel.subscribedAt) }}</span>
+        </time>
+        <p class="mt-1 text-[10px] text-fg-faint">
+          <span v-if="sinceOpen">開設から{{ sinceOpen }}後 ・ </span>
+          {{ formatElapsed(channel.subscribedAt) }}
+        </p>
+      </div>
     </div>
   </li>
 </template>

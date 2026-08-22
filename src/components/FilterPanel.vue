@@ -70,8 +70,19 @@ const axes = computed(() => [
       </button>
     </div>
 
-    <div class="rounded-3xl border-2 border-fg bg-surface px-5 py-1">
-      <div v-for="ax in axes" :key="ax.key" class="border-b border-line py-3.5">
+    <!--
+      狭い画面では 1 行 1 項目で縦に積む。
+      lg 以上は横幅が余るので、3 項目を横一列に並べて縦罫線で区切る。
+      セルは伸ばしたまま(既定の stretch)にして、罫線の高さを揃えている。
+    -->
+    <div
+      class="rounded-3xl border-2 border-fg bg-surface px-5 py-1 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:py-2"
+    >
+      <div
+        v-for="ax in axes"
+        :key="ax.key"
+        class="border-b border-line py-3.5 lg:flex lg:flex-col lg:justify-center lg:border-r lg:border-b-0 lg:border-line lg:pr-6"
+      >
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span class="font-round text-[11px] font-bold">{{ ax.label }}</span>
 
@@ -158,7 +169,10 @@ const axes = computed(() => [
       </div>
 
       <!-- 名前 -->
-      <div class="cursor-text py-3.5" @click="searchInput?.focus()">
+      <div
+        class="cursor-text py-3.5 lg:flex lg:flex-col lg:justify-center"
+        @click="searchInput?.focus()"
+      >
         <label class="flex items-center gap-2">
           <SearchIcon class="size-4 shrink-0 text-fg-faint" />
           <input
