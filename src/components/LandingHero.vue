@@ -118,10 +118,9 @@ const features = [
           >
             <ul>
               <ChannelRow
-                v-for="(c, i) in sample"
+                v-for="c in sample"
                 :key="c.channelId"
                 :channel="c"
-                :rank="i + 1"
                 :linked="false"
               />
             </ul>

@@ -229,10 +229,9 @@ const LOGOUT_BUTTON =
 
         <ul v-else>
           <ChannelRow
-            v-for="(c, i) in visibleChannels"
+            v-for="c in visibleChannels"
             :key="c.channelId"
             :channel="c"
-            :rank="i + 1"
           />
         </ul>
       </div>

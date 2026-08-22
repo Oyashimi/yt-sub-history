@@ -7,7 +7,6 @@ import type { SubscribedChannel } from '@/types/youtube'
 const props = withDefaults(
   defineProps<{
     channel: SubscribedChannel
-    rank: number
     /** ダミーデータを並べる表示例では、飛び先がないので false にする */
     linked?: boolean
   }>(),
@@ -40,9 +39,6 @@ const sinceOpen = computed(() => {
       <div
         class="flex items-center gap-3.5 border-b border-line/50 pb-3 @2xl:min-w-0 @2xl:flex-1 @2xl:border-0 @2xl:pb-0"
       >
-        <span class="w-5 shrink-0 text-right font-mono text-[10px] tabular-nums text-fg-faint">
-          {{ rank }}
-        </span>
         <img
           v-if="channel.thumbnailUrl"
           :src="channel.thumbnailUrl"
@@ -65,11 +61,11 @@ const sinceOpen = computed(() => {
       </div>
 
       <!--
-        日付の段。pl-22(88px) はチャンネル名の左端に合わせた値で、
-        内訳は 連番 20px + gap 14px + アイコン 40px + gap 14px。
-        上の 3 つのどれかを変えたらここも合わせること。
+        日付の段。pl-13.5(54px) はチャンネル名の左端に合わせた値で、
+        内訳は アイコン 40px + gap 14px。
+        どちらかを変えたらここも合わせること。
       -->
-      <div class="pt-3 pl-22 @2xl:shrink-0 @2xl:pt-0 @2xl:pl-0 @2xl:text-right">
+      <div class="pt-3 pl-13.5 @2xl:shrink-0 @2xl:pt-0 @2xl:pl-0 @2xl:text-right">
         <time
           :datetime="channel.publishedAt"
           class="block font-mono text-[13px] tabular-nums"
