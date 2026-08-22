@@ -13,6 +13,8 @@ const props = defineProps<{
   years: number[]
   /** 選べる登録期間(年数・昇順) */
   spans: number[]
+  /** 絞り込んだ結果の件数。絞り込みの結果なので、この見出しに添える */
+  hits: number
 }>()
 
 const yearFilter = defineModel<AxisFilter>('year', { required: true })
@@ -60,14 +62,22 @@ const axes = computed(() => [
   <section>
     <div class="mb-1.5 flex items-baseline justify-between gap-3 px-6">
       <p class="font-round text-[12px] font-bold text-fg-dim">絞り込み</p>
-      <button
-        v-if="anyActive"
-        type="button"
-        class="font-round text-[11px] text-fg-faint underline underline-offset-4 transition-colors hover:text-fg"
-        @click="clearAll"
-      >
-        すべて解除
-      </button>
+
+      <!-- 左右の px-6 はカードの角丸 24px に合わせた値。丸みに乗り上げないため -->
+      <div class="flex shrink-0 items-baseline gap-3">
+        <button
+          v-if="anyActive"
+          type="button"
+          class="font-round text-[11px] text-fg-faint underline underline-offset-4 transition-colors hover:text-fg"
+          @click="clearAll"
+        >
+          すべて解除
+        </button>
+        <p class="font-round text-[11px] text-fg-faint">
+          ヒット数
+          <span class="ml-1 font-mono tabular-nums">{{ hits }}</span>
+        </p>
+      </div>
     </div>
 
     <!--
@@ -84,7 +94,7 @@ const axes = computed(() => [
         :key="ax.key"
         class="border-b border-line py-3.5 lg:flex lg:flex-col lg:justify-center lg:border-b-0 lg:border-line lg:first:border-r lg:first:pr-6"
       >
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2.5">
           <!--
             軸名と条件を 1 つの枠に収める。一覧の並べ替えと同じ作り。
             ベタ塗りは「選択中」にだけ使い、それも黒インクの薄刷り(fg/15)に
@@ -113,8 +123,14 @@ const axes = computed(() => [
             </span>
           </span>
 
-          <!-- 値。始点は全モード共通、終点は範囲のときだけ出す -->
-          <span class="ml-auto flex items-center gap-1.5">
+          <!--
+            値。始点は全モード共通、終点は範囲のときだけ出す。
+
+            折り返す狭い画面では、行を独り占めするので右端へ寄せる。
+            1 行に収まる lg 以上で ml-auto を残すとピルが左端へ押し出され、
+            条件ボタンの中央揃えが崩れるため、そこでは中央の並びに戻す。
+          -->
+          <span class="ml-auto flex items-center gap-1.5 lg:ml-0">
             <span class="relative inline-flex items-center">
               <select
                 :value="ax.model.a"

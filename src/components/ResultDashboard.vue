@@ -61,31 +61,29 @@ const EXPORT_BUTTON =
  * 並べ替えの選択肢。基準の軸ごとに束ねている。
  * 開設からの長さは後追いで埋まる値なので、確実に出せる登録日順を先に置く。
  *
- * ラベルは 2 つ持つ。
- * short は軸名を括り出したボタン用、long は軸名まで含めたセレクト用。
+ * 4 つしかないので、セレクトにはせず全画面幅でボタンのまま出す。
+ * select は開いたあとの見た目が OS のものになり(iOS はホイール)、
+ * こちらでは手を出せないため、この規模なら統一を優先する。
  */
 const SORT_GROUPS: Array<{
   axis: string
-  options: Array<{ value: SortOrder; short: string; long: string }>
+  options: Array<{ value: SortOrder; label: string }>
 }> = [
   {
     axis: '登録日',
     options: [
-      { value: 'oldest', short: '古い順', long: '登録が古い順' },
-      { value: 'newest', short: '新しい順', long: '登録が新しい順' },
+      { value: 'oldest', label: '古い順' },
+      { value: 'newest', label: '新しい順' },
     ],
   },
   {
     axis: '開設から',
     options: [
-      { value: 'sinceOpenShort', short: '短い順', long: '開設からの日数が短い順' },
-      { value: 'sinceOpenLong', short: '長い順', long: '開設からの日数が長い順' },
+      { value: 'sinceOpenShort', label: '短い順' },
+      { value: 'sinceOpenLong', label: '長い順' },
     ],
   },
 ]
-
-/** セレクト用の平坦な一覧。選択肢の定義を 2 か所に持たないため */
-const SORT_OPTIONS = SORT_GROUPS.flatMap((g) => g.options)
 
 const LOGOUT_BUTTON =
   'shrink-0 text-[11px] text-fg-faint underline underline-offset-4 transition-colors hover:text-fg-dim'
@@ -161,43 +159,25 @@ const LOGOUT_BUTTON =
           v-model:keyword="keyword"
           :years="years"
           :spans="spans"
+          :hits="visibleChannels.length"
         />
       </div>
 
       <!-- 一覧 -->
       <!-- 左右とも px-6 はカードの角丸 24px に合わせている -->
-      <div class="mt-10 mb-1.5 flex items-center justify-between gap-3 px-6">
-        <p class="font-round text-[12px] font-bold text-fg-dim">
-          ヒット数
-          <span class="ml-1 font-mono text-[11px] tabular-nums text-fg-faint">
-            {{ visibleChannels.length }}
-          </span>
+      <div
+        class="mt-10 mb-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-3 px-6 lg:justify-between"
+      >
+        <!-- 狭い画面では 1 行使い切らせ、ピルを必ず次の行から始めさせる -->
+        <p
+          class="w-full text-center font-round text-[12px] font-bold text-fg-dim lg:w-auto lg:text-left"
+        >
+          並べ替え
         </p>
 
         <!--
-          並べ替え。狭い画面は 4 つ横に並べられないので、
-          絞り込みと同じ見た目のセレクトにまとめる。
-        -->
-        <span class="relative inline-flex shrink-0 items-center lg:hidden">
-          <select
-            v-model="sortOrder"
-            aria-label="並べ替え"
-            class="appearance-none rounded-md border border-fg bg-surface py-1 pr-5 pl-2 font-round text-[11px] outline-none"
-          >
-            <option v-for="o in SORT_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.long }}
-            </option>
-          </select>
-          <span
-            aria-hidden="true"
-            class="pointer-events-none absolute right-1.5 text-[8px] text-fg-dim"
-          >
-            ▼
-          </span>
-        </span>
-
-        <!--
-          lg 以上は横幅が足りるので、軸ごとに括って直接押せるボタンで並べる。
+          軸ごとに括って直接押せるボタンで並べる。
+          狭い画面では 2 つ並べる幅がないので、折り返して縦に積む。
           軸が 2 つあることは、枠で囲って領域にすることで示す。
           ベタ塗りは「選択中」にだけ使う。軸名まで塗ると、強い面が常に 2 つ
           居座って、どれを選んでいるのかが読み取れなくなるため。
@@ -206,7 +186,7 @@ const LOGOUT_BUTTON =
           重すぎるが、色を増やすのも紙面が散る。無彩色の薄い灰なら、
           文字と同じインクの濃度差として収まる。
         -->
-        <div class="hidden shrink-0 items-center gap-3 font-round text-[11px] lg:flex">
+        <div class="flex flex-wrap items-center justify-center gap-2.5 font-round text-[11px]">
           <span
             v-for="g in SORT_GROUPS"
             :key="g.axis"
@@ -227,7 +207,7 @@ const LOGOUT_BUTTON =
                 "
                 @click="sortOrder = o.value"
               >
-                {{ o.short }}
+                {{ o.label }}
               </button>
             </span>
           </span>
