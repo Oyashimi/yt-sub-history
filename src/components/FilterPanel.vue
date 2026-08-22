@@ -72,35 +72,45 @@ const axes = computed(() => [
 
     <!--
       狭い画面では 1 行 1 項目で縦に積む。
-      lg 以上は横幅が余るので、3 項目を横一列に並べて縦罫線で区切る。
+      lg 以上は 2 軸を横に並べて縦罫線で区切り、名前は下段に幅いっぱいで置く。
+      3 列にすると 1 列が狭すぎて、条件と値が 2 行に折り返してしまう。
       セルは伸ばしたまま(既定の stretch)にして、罫線の高さを揃えている。
     -->
     <div
-      class="rounded-3xl border-2 border-fg bg-surface px-5 py-1 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:py-2"
+      class="rounded-3xl border-2 border-fg bg-surface px-5 py-1 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:py-2"
     >
       <div
         v-for="ax in axes"
         :key="ax.key"
-        class="border-b border-line py-3.5 lg:flex lg:flex-col lg:justify-center lg:border-r lg:border-b-0 lg:border-line lg:pr-6"
+        class="border-b border-line py-3.5 lg:flex lg:flex-col lg:justify-center lg:border-b-0 lg:border-line lg:first:border-r lg:first:pr-6"
       >
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span class="font-round text-[11px] font-bold">{{ ax.label }}</span>
-
-          <span class="flex items-center gap-2.5">
-            <button
-              v-for="m in MODES"
-              :key="m.mode"
-              type="button"
-              class="font-round text-[11px] transition-colors"
-              :class="
-                ax.model.mode === m.mode
-                  ? 'font-bold text-fg underline underline-offset-4'
-                  : 'text-fg-faint hover:text-fg-dim'
-              "
-              @click="setMode(ax.key, m.mode)"
-            >
-              {{ m.label }}
-            </button>
+          <!--
+            軸名と条件を 1 つの枠に収める。一覧の並べ替えと同じ作り。
+            ベタ塗りは「選択中」にだけ使い、それも黒インクの薄刷り(fg/15)に
+            留める。軸名は無彩色より一段温かい bg-line で、選択中と混ざらない。
+          -->
+          <span
+            class="flex items-center overflow-hidden rounded-full border border-fg bg-surface font-round text-[11px]"
+          >
+            <span class="bg-line px-2.5 py-1.5 font-bold text-fg-dim">{{ ax.label }}</span>
+            <span class="flex items-center gap-1.5 px-1.5 py-1">
+              <button
+                v-for="m in MODES"
+                :key="m.mode"
+                type="button"
+                class="rounded-full px-2.5 py-0.5 transition-colors"
+                :aria-pressed="ax.model.mode === m.mode"
+                :class="
+                  ax.model.mode === m.mode
+                    ? 'bg-fg/15 font-bold text-fg'
+                    : 'text-fg-faint hover:bg-line/60 hover:text-fg-dim'
+                "
+                @click="setMode(ax.key, m.mode)"
+              >
+                {{ m.label }}
+              </button>
+            </span>
           </span>
 
           <!-- 値。始点は全モード共通、終点は範囲のときだけ出す -->
@@ -168,9 +178,9 @@ const axes = computed(() => [
         </div>
       </div>
 
-      <!-- 名前 -->
+      <!-- 名前。lg 以上は下段を 2 列ぶち抜きで使い、横罫線で上と分ける -->
       <div
-        class="cursor-text py-3.5 lg:flex lg:flex-col lg:justify-center"
+        class="cursor-text py-3.5 lg:col-span-2 lg:border-t lg:border-line lg:pt-4"
         @click="searchInput?.focus()"
       >
         <label class="flex items-center gap-2">
