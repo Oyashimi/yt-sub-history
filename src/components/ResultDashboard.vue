@@ -58,15 +58,34 @@ const EXPORT_BUTTON =
   'rounded-full border-2 border-fg bg-surface px-7 py-3.5 font-round text-[14px] font-medium shadow-[4px_4px_0_var(--color-fg)] transition-[transform,box-shadow] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
 
 /**
- * 並べ替えの選択肢。
+ * 並べ替えの選択肢。基準の軸ごとに束ねている。
  * 開設からの長さは後追いで埋まる値なので、確実に出せる登録日順を先に置く。
+ *
+ * ラベルは 2 つ持つ。
+ * short は軸名を括り出したボタン用、long は軸名まで含めたセレクト用。
  */
-const SORT_OPTIONS: Array<{ value: SortOrder; label: string }> = [
-  { value: 'oldest', label: '登録が古い順' },
-  { value: 'newest', label: '登録が新しい順' },
-  { value: 'sinceOpenShort', label: '開設からの日数が短い順' },
-  { value: 'sinceOpenLong', label: '開設からの日数が長い順' },
+const SORT_GROUPS: Array<{
+  axis: string
+  options: Array<{ value: SortOrder; short: string; long: string }>
+}> = [
+  {
+    axis: '登録日',
+    options: [
+      { value: 'oldest', short: '古い順', long: '登録が古い順' },
+      { value: 'newest', short: '新しい順', long: '登録が新しい順' },
+    ],
+  },
+  {
+    axis: '開設から',
+    options: [
+      { value: 'sinceOpenShort', short: '短い順', long: '開設からの日数が短い順' },
+      { value: 'sinceOpenLong', short: '長い順', long: '開設からの日数が長い順' },
+    ],
+  },
 ]
+
+/** セレクト用の平坦な一覧。選択肢の定義を 2 か所に持たないため */
+const SORT_OPTIONS = SORT_GROUPS.flatMap((g) => g.options)
 
 const LOGOUT_BUTTON =
   'shrink-0 text-[11px] text-fg-faint underline underline-offset-4 transition-colors hover:text-fg-dim'
@@ -156,17 +175,17 @@ const LOGOUT_BUTTON =
         </p>
 
         <!--
-          並べ替え。4 つに増えてテキストボタンでは横に収まらないので、
-          絞り込みと同じ見た目のセレクトにまとめている。
+          並べ替え。狭い画面は 4 つ横に並べられないので、
+          絞り込みと同じ見た目のセレクトにまとめる。
         -->
-        <span class="relative inline-flex shrink-0 items-center">
+        <span class="relative inline-flex shrink-0 items-center lg:hidden">
           <select
             v-model="sortOrder"
             aria-label="並べ替え"
             class="appearance-none rounded-md border border-fg bg-surface py-1 pr-5 pl-2 font-round text-[11px] outline-none"
           >
             <option v-for="o in SORT_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
+              {{ o.long }}
             </option>
           </select>
           <span
@@ -176,6 +195,39 @@ const LOGOUT_BUTTON =
             ▼
           </span>
         </span>
+
+        <!--
+          lg 以上は横幅が足りるので、軸ごとに括って直接押せるボタンで並べる。
+          軸が 2 つあることは、枠で囲って領域にすることで示す。
+          ベタ塗りは「選択中」にだけ使う。軸名まで黒く塗ると、一番強い面が
+          常に 2 つ居座って、どれを選んでいるのかが読み取れなくなるため。
+        -->
+        <div class="hidden shrink-0 items-center gap-3 font-round text-[11px] lg:flex">
+          <span
+            v-for="g in SORT_GROUPS"
+            :key="g.axis"
+            class="flex items-center overflow-hidden rounded-full border border-fg bg-surface"
+          >
+            <span class="bg-line px-2.5 py-1.5 font-bold text-fg-dim">{{ g.axis }}</span>
+            <span class="flex items-center gap-1.5 px-1.5 py-1">
+              <button
+                v-for="o in g.options"
+                :key="o.value"
+                type="button"
+                class="rounded-full px-2.5 py-0.5 transition-colors"
+                :aria-pressed="sortOrder === o.value"
+                :class="
+                  sortOrder === o.value
+                    ? 'bg-fg font-bold text-surface'
+                    : 'text-fg-faint hover:bg-line/60 hover:text-fg-dim'
+                "
+                @click="sortOrder = o.value"
+              >
+                {{ o.short }}
+              </button>
+            </span>
+          </span>
+        </div>
       </div>
 
       <!-- @container: 行(ChannelRow)がカード幅を見て 1 段組/2 段組を切り替える -->
