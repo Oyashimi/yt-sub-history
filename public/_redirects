@@ -1,1 +1,10 @@
+# /privacy と /terms はビルド時に静的 HTML を書き出している(scripts/prerender.mjs)。
+# 先に書いた行が優先されるため、SPA フォールバックより上に置くこと。
+# ここが下に来ると、JS を実行しないクローラーにポリシー本文が見えなくなる。
+/privacy    /privacy/index.html    200
+/privacy/   /privacy/index.html    200
+/terms      /terms/index.html      200
+/terms/     /terms/index.html      200
+
+# それ以外はクライアントルーティングに任せる
 /*    /index.html   200

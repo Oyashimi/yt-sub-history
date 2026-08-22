@@ -55,6 +55,13 @@ Vue 3 + Vite + TypeScript / Tailwind CSS v4 / Google Identity Services / YouTube
 サーバーサイドの処理は一切なく、静的ファイルだけを配信しています。
 アクセストークンはブラウザのメモリ上にのみ置き、どこにも書き出しません。
 
+`npm run build` は、通常のビルドのあとに `/privacy` と `/terms` の静的 HTML を
+`src/views/*.vue` から生成します（`src/prerender.ts` / `scripts/prerender.mjs`）。
+配信は SPA フォールバックなので、これがないと JS を実行しないクローラーには
+ポリシー本文が見えず、Google の OAuth ブランディング確認で
+「プライバシーポリシーが見つからない」と判定されます。
+デプロイ側のビルドコマンドは `vite build` ではなく **`npm run build`** にしてください。
+
 ## 非公式なサービスです
 
 Google LLC および YouTube とは提携していません。個人が開発・運営しています。
