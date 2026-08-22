@@ -199,8 +199,12 @@ const LOGOUT_BUTTON =
         <!--
           lg 以上は横幅が足りるので、軸ごとに括って直接押せるボタンで並べる。
           軸が 2 つあることは、枠で囲って領域にすることで示す。
-          ベタ塗りは「選択中」にだけ使う。軸名まで黒く塗ると、一番強い面が
-          常に 2 つ居座って、どれを選んでいるのかが読み取れなくなるため。
+          ベタ塗りは「選択中」にだけ使う。軸名まで塗ると、強い面が常に 2 つ
+          居座って、どれを選んでいるのかが読み取れなくなるため。
+
+          選択中は黒インクの薄刷り(fg/15)で塗る。ベタの黒はこの大きさの UI には
+          重すぎるが、色を増やすのも紙面が散る。無彩色の薄い灰なら、
+          文字と同じインクの濃度差として収まる。
         -->
         <div class="hidden shrink-0 items-center gap-3 font-round text-[11px] lg:flex">
           <span
@@ -218,7 +222,7 @@ const LOGOUT_BUTTON =
                 :aria-pressed="sortOrder === o.value"
                 :class="
                   sortOrder === o.value
-                    ? 'bg-fg font-bold text-surface'
+                    ? 'bg-fg/15 font-bold text-fg'
                     : 'text-fg-faint hover:bg-line/60 hover:text-fg-dim'
                 "
                 @click="sortOrder = o.value"
