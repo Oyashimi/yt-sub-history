@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import UserCircleIcon from './UserCircleIcon.vue'
-import { formatDate, formatElapsed, formatSpan, formatTime } from '@/lib/format'
+import { formatDate, formatSpan, formatTime } from '@/lib/format'
 import type { SubscribedChannel } from '@/types/youtube'
 
 const props = withDefaults(
@@ -77,9 +77,9 @@ const sinceOpen = computed(() => {
           {{ formatDate(channel.subscribedAt) }}
           <span class="text-fg-dim">{{ formatTime(channel.subscribedAt) }}</span>
         </time>
-        <p class="mt-1 text-[10px] text-fg-faint">
-          <span v-if="sinceOpen">開設から{{ sinceOpen }}後 ・ </span>
-          {{ formatElapsed(channel.subscribedAt) }}
+        <!-- 開設日が取れないチャンネル(削除済みなど)ではこの行ごと出さない -->
+        <p v-if="sinceOpen" class="mt-1 text-[10px] text-fg-faint">
+          開設から{{ sinceOpen }}後
         </p>
       </div>
     </div>
