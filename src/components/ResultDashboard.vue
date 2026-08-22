@@ -5,7 +5,11 @@ import YearChart from './YearChart.vue'
 import ChannelRow from './ChannelRow.vue'
 import ShareCardModal from './ShareCardModal.vue'
 import FilterPanel from './FilterPanel.vue'
-import { defaultAxisFilter, useSubscriptions } from '@/composables/useSubscriptions'
+import {
+  defaultAxisFilter,
+  useSubscriptions,
+  type SortOrder,
+} from '@/composables/useSubscriptions'
 import { elapsedYears } from '@/lib/format'
 
 const emit = defineEmits<{ logout: [] }>()
@@ -52,6 +56,17 @@ const shareList = computed(() =>
 /** 書き出しボタン。グラフの直下に置く */
 const EXPORT_BUTTON =
   'rounded-full border-2 border-fg bg-surface px-7 py-3.5 font-round text-[14px] font-medium shadow-[4px_4px_0_var(--color-fg)] transition-[transform,box-shadow] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
+
+/**
+ * 並べ替えの選択肢。
+ * 開設からの長さは後追いで埋まる値なので、確実に出せる登録日順を先に置く。
+ */
+const SORT_OPTIONS: Array<{ value: SortOrder; label: string }> = [
+  { value: 'oldest', label: '登録が古い順' },
+  { value: 'newest', label: '登録が新しい順' },
+  { value: 'sinceOpenShort', label: '開設からの日数が短い順' },
+  { value: 'sinceOpenLong', label: '開設からの日数が長い順' },
+]
 
 const LOGOUT_BUTTON =
   'shrink-0 text-[11px] text-fg-faint underline underline-offset-4 transition-colors hover:text-fg-dim'
@@ -132,39 +147,35 @@ const LOGOUT_BUTTON =
 
       <!-- 一覧 -->
       <!-- 左右とも px-6 はカードの角丸 24px に合わせている -->
-      <div class="mt-10 mb-1.5 flex items-baseline justify-between gap-3 px-6">
+      <div class="mt-10 mb-1.5 flex items-center justify-between gap-3 px-6">
         <p class="font-round text-[12px] font-bold text-fg-dim">
           ヒット数
           <span class="ml-1 font-mono text-[11px] tabular-nums text-fg-faint">
             {{ visibleChannels.length }}
           </span>
         </p>
-        <div class="flex shrink-0 items-center gap-3 font-round text-[11px]">
-          <button
-            type="button"
-            class="transition-colors"
-            :class="
-              sortOrder === 'oldest'
-                ? 'font-bold text-fg underline underline-offset-4'
-                : 'text-fg-faint hover:text-fg-dim'
-            "
-            @click="sortOrder = 'oldest'"
+
+        <!--
+          並べ替え。4 つに増えてテキストボタンでは横に収まらないので、
+          絞り込みと同じ見た目のセレクトにまとめている。
+        -->
+        <span class="relative inline-flex shrink-0 items-center">
+          <select
+            v-model="sortOrder"
+            aria-label="並べ替え"
+            class="appearance-none rounded-md border border-fg bg-surface py-1 pr-5 pl-2 font-round text-[11px] outline-none"
           >
-            古い順
-          </button>
-          <button
-            type="button"
-            class="transition-colors"
-            :class="
-              sortOrder === 'newest'
-                ? 'font-bold text-fg underline underline-offset-4'
-                : 'text-fg-faint hover:text-fg-dim'
-            "
-            @click="sortOrder = 'newest'"
+            <option v-for="o in SORT_OPTIONS" :key="o.value" :value="o.value">
+              {{ o.label }}
+            </option>
+          </select>
+          <span
+            aria-hidden="true"
+            class="pointer-events-none absolute right-1.5 text-[8px] text-fg-dim"
           >
-            新しい順
-          </button>
-        </div>
+            ▼
+          </span>
+        </span>
       </div>
 
       <!-- @container: 行(ChannelRow)がカード幅を見て 1 段組/2 段組を切り替える -->

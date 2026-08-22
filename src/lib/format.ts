@@ -24,18 +24,29 @@ export function formatTime(d: Date): string {
 }
 
 /**
- * from から to までの長さ。「前」などの向きは付けない。
- * 1 年未満は日数、それ以上は「◯年◯ヶ月」。
+ * from から to までの長さを「◯日◯時間」で返す。「後」などの向きは付けない。
+ *
+ * 年月には丸めない。「開設からどれだけ経って登録したか」は日数どうしを
+ * 比べたい値で、丸めると 3 日と 300 日の差が同じ「◯年」に埋もれてしまう。
+ * 1 日未満は時間だけを出す。
+ *
+ * 差は絶対時間で取るので、夏時間やタイムゾーンの影響を受けない。
  */
 export function formatSpan(from: Date, to: Date): string {
-  const days = Math.max(0, Math.floor((to.getTime() - from.getTime()) / 86_400_000))
-  if (days < 365) return `${days}日`
+  const ms = Math.max(0, to.getTime() - from.getTime())
+  const days = Math.floor(ms / 86_400_000)
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000)
+  if (days === 0) return `${hours}時間`
+  return `${days.toLocaleString('ja-JP')}日${hours}時間`
+}
 
-  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth())
-  if (to.getDate() < from.getDate()) months -= 1
-  const years = Math.floor(months / 12)
-  const rest = months % 12
-  return rest === 0 ? `${years}年` : `${years}年${rest}ヶ月`
+/**
+ * 開設から登録までのミリ秒。並べ替えの基準に使う。
+ * 開設日は後追いで埋まるので、まだ無いうちは null。
+ */
+export function spanMs(from: Date | undefined, to: Date): number | null {
+  if (!from) return null
+  return Math.max(0, to.getTime() - from.getTime())
 }
 
 /** 「◯年◯ヶ月前」。1 ヶ月未満は「◯日前」 */

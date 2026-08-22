@@ -7,10 +7,14 @@ import {
 import { buildStats } from '@/lib/stats'
 import { AppError, isAppError, type AppErrorKind } from '@/lib/errors'
 import { filterByQuery, normalizeForSearch } from '@/lib/search'
-import { elapsedYears } from '@/lib/format'
+import { elapsedYears, spanMs } from '@/lib/format'
 import type { SubscribedChannel } from '@/types/youtube'
 
-export type SortOrder = 'oldest' | 'newest'
+/**
+ * 並べ替えの基準。
+ * sinceOpen 系は「登録先チャンネルの開設から、登録するまでの長さ」で並べる。
+ */
+export type SortOrder = 'oldest' | 'newest' | 'sinceOpenShort' | 'sinceOpenLong'
 
 export type RangeMode = 'lte' | 'gte' | 'range'
 
@@ -105,11 +109,35 @@ export function useSubscriptions() {
 
   const visibleChannels = computed(() => {
     const list = [...filtered.value.items]
-    list.sort((a, b) =>
-      sortOrder.value === 'oldest'
-        ? a.subscribedAt.getTime() - b.subscribedAt.getTime()
-        : b.subscribedAt.getTime() - a.subscribedAt.getTime(),
-    )
+    const order = sortOrder.value
+
+    if (order === 'oldest' || order === 'newest') {
+      list.sort((a, b) =>
+        order === 'oldest'
+          ? a.subscribedAt.getTime() - b.subscribedAt.getTime()
+          : b.subscribedAt.getTime() - a.subscribedAt.getTime(),
+      )
+      return list
+    }
+
+    /**
+     * 開設からの長さで並べる。
+     * 開設日は後追いで埋まるので、まだ無い行は末尾へ寄せる。
+     * 0 として扱うと先頭を占拠し、埋まるたびに行が大きく飛んでしまう。
+     * 同じ長さどうし・未取得どうしは登録が古い順にして、並びを安定させる。
+     */
+    list.sort((a, b) => {
+      const sa = spanMs(a.channelCreatedAt, a.subscribedAt)
+      const sb = spanMs(b.channelCreatedAt, b.subscribedAt)
+      if (sa === null || sb === null) {
+        if (sa === null && sb === null) {
+          return a.subscribedAt.getTime() - b.subscribedAt.getTime()
+        }
+        return sa === null ? 1 : -1
+      }
+      if (sa !== sb) return order === 'sinceOpenShort' ? sa - sb : sb - sa
+      return a.subscribedAt.getTime() - b.subscribedAt.getTime()
+    })
     return list
   })
 
