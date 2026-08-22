@@ -66,16 +66,34 @@ const sinceOpen = computed(() => {
         どちらかを変えたらここも合わせること。
       -->
       <div class="pt-3 pl-13.5 @2xl:shrink-0 @2xl:pt-0 @2xl:pl-0 @2xl:text-right">
-        <time
-          :datetime="channel.publishedAt"
-          class="block font-mono text-[13px] tabular-nums"
-        >
-          {{ formatDate(channel.subscribedAt) }}
-          <span class="text-fg-dim">{{ formatTime(channel.subscribedAt) }}</span>
-        </time>
+        <!--
+          1 行に収まる広さがあるときは、何の日付なのかを言葉で添える。
+          添え物なので小さく薄くし、主役の日付より前に出ないようにする。
+          ラベルは time の外に置く(time の中身は日時そのものであるべき)。
+        -->
+        <div class="@2xl:flex @2xl:items-baseline @2xl:justify-end @2xl:gap-1.5">
+          <span class="hidden text-[10px] text-fg-faint @2xl:inline">登録日</span>
+          <time
+            :datetime="channel.publishedAt"
+            class="block font-mono text-[13px] tabular-nums"
+          >
+            {{ formatDate(channel.subscribedAt) }}
+            {{ formatTime(channel.subscribedAt) }}
+          </time>
+        </div>
+
         <!-- 開設日が取れないチャンネル(削除済みなど)ではこの行ごと出さない -->
         <p v-if="sinceOpen" class="mt-1 text-[10px] text-fg-faint">
-          開設から{{ sinceOpen }}後
+          <!-- 添えの文は薄いまま。値だけ黒く太くして、そこだけ拾えるようにする -->
+          <span class="@2xl:hidden"
+            >開設から<span class="font-bold text-fg">{{ sinceOpen }}</span>後に登録</span
+          >
+          <span class="hidden @2xl:inline"
+            >開設から<span class="font-bold text-fg">{{
+              sinceOpen
+            }}</span
+            >後に登録</span
+          >
         </p>
       </div>
     </div>
