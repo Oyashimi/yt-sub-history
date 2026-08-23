@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import HighlightStats from './HighlightStats.vue'
 import YearChart from './YearChart.vue'
 import ChannelRow from './ChannelRow.vue'
@@ -8,6 +8,7 @@ import FilterPanel from './FilterPanel.vue'
 import {
   defaultAxisFilter,
   useSubscriptions,
+  SHARE_LIMIT,
   type SortOrder,
 } from '@/composables/useSubscriptions'
 import { elapsedYears } from '@/lib/format'
@@ -15,7 +16,6 @@ import { elapsedYears } from '@/lib/format'
 const emit = defineEmits<{ logout: [] }>()
 
 const {
-  channels,
   visibleChannels,
   isFuzzyMatch,
   stats,
@@ -23,6 +23,13 @@ const {
   keyword,
   yearFilter,
   spanFilter,
+  shareOrder,
+  shareList,
+  shareHeading,
+  pickedIds,
+  picking,
+  isPicked,
+  togglePick,
 } = useSubscriptions()
 
 const years = computed(() => stats.value.byYear.map((b) => b.year))
@@ -45,17 +52,32 @@ function toggleYear(year: number) {
 }
 
 const showShare = ref(false)
+const listRef = useTemplateRef<HTMLElement>('list')
 
-/** 書き出し画像に載せる 5 件。一覧の並び順とは独立させ、古い順で固定する */
-const shareList = computed(() =>
-  [...channels.value]
-    .sort((a, b) => a.subscribedAt.getTime() - b.subscribedAt.getTime())
-    .slice(0, 5),
-)
+/**
+ * 自由選択を始める。
+ * 選ぶ相手は下の一覧にしかないので、モードに入れるだけでは何も起きたように
+ * 見えない。一覧まで運んで、選べる状態になったことを見せる。
+ */
+function startPicking() {
+  picking.value = true
+  showShare.value = false
+  void nextTick(() => {
+    listRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
 
 /** 書き出しボタン。グラフの直下に置く */
 const EXPORT_BUTTON =
   'rounded-full border-2 border-fg bg-surface px-7 py-3.5 font-round text-[14px] font-medium shadow-[4px_4px_0_var(--color-fg)] transition-[transform,box-shadow] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
+
+/** 自由選択への入り口。書き出しボタンに添える脇役なので一段小さく */
+const PICK_BUTTON =
+  'rounded-full border-2 border-fg bg-surface px-5 py-3 font-round text-[12px] font-medium shadow-[3px_3px_0_var(--color-fg)] transition-[transform,box-shadow] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_var(--color-fg)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none'
+
+/** 選択バーの主ボタン。紙の上に置くので影は文字色で落とす */
+const BAR_BUTTON =
+  'rounded-full border-2 border-fg bg-surface px-4 py-2 font-round text-[12px] font-bold shadow-[3px_3px_0_var(--color-fg)] transition-[transform,box-shadow] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_var(--color-fg)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:border-line disabled:text-fg-faint disabled:shadow-[3px_3px_0_var(--color-line)]'
 
 /**
  * 並べ替えの選択肢。基準の軸ごとに束ねている。
@@ -85,7 +107,8 @@ const SORT_GROUPS: Array<{
   },
 ]
 
-const LOGOUT_BUTTON =
+/** 控えめなテキストリンク。押せるが主張はさせたくないもの向け */
+const TEXT_LINK =
   'shrink-0 text-[11px] text-fg-faint underline underline-offset-4 transition-colors hover:text-fg-dim'
 </script>
 
@@ -94,8 +117,13 @@ const LOGOUT_BUTTON =
     幅は狭い画面向けの max-w-xl が基準。
     lg 以上は左右の余白が空きすぎるので器を広げ、上段(答えとグラフ)だけを
     2 段組にする。絞り込みと一覧は横幅をそのまま使い切る。
+
+    自由選択の操作バーが出ている間は、一覧の末尾がバーに隠れないよう下を空ける。
   -->
-  <section class="mx-auto max-w-xl px-6 pt-12 pb-16 lg:max-w-5xl lg:px-10 lg:pt-16 xl:max-w-6xl">
+  <section
+    class="mx-auto max-w-xl px-6 pt-12 lg:max-w-5xl lg:px-10 lg:pt-16 xl:max-w-6xl"
+    :class="picking ? 'pb-32' : 'pb-16'"
+  >
     <!-- 空状態 -->
     <div v-if="stats.total === 0" class="pt-16 text-center">
       <h2 class="font-round text-[18px] font-bold">
@@ -121,7 +149,7 @@ const LOGOUT_BUTTON =
         <h1 class="font-round text-[15px] font-bold lg:text-[18px]">
           チャンネル登録日チェッカー
         </h1>
-        <button type="button" :class="LOGOUT_BUTTON" @click="emit('logout')">
+        <button type="button" :class="TEXT_LINK" @click="emit('logout')">
           ログアウト
         </button>
       </header>
@@ -143,9 +171,12 @@ const LOGOUT_BUTTON =
             書き出しボタン。
             lg 以上では、左段の「最初の登録」とグラフの高さの差で空くスペースに収まる。
           -->
-          <div class="mt-8 text-center lg:mt-7">
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3 lg:mt-7">
             <button type="button" :class="EXPORT_BUTTON" @click="showShare = true">
               画像に書き出す
+            </button>
+            <button type="button" :class="PICK_BUTTON" @click="startPicking">
+              5つ選んで作る
             </button>
           </div>
         </div>
@@ -166,6 +197,7 @@ const LOGOUT_BUTTON =
       <!-- 一覧 -->
       <!-- 左右とも px-6 はカードの角丸 24px に合わせている -->
       <div
+        ref="list"
         class="mt-10 mb-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-3 px-6 lg:justify-between"
       >
         <!-- 狭い画面では 1 行使い切らせ、ピルを必ず次の行から始めさせる -->
@@ -232,6 +264,10 @@ const LOGOUT_BUTTON =
             v-for="c in visibleChannels"
             :key="c.channelId"
             :channel="c"
+            :selectable="picking"
+            :selected="isPicked(c.channelId)"
+            :full="pickedIds.length >= SHARE_LIMIT"
+            @toggle="togglePick(c.channelId)"
           />
         </ul>
       </div>
@@ -241,10 +277,47 @@ const LOGOUT_BUTTON =
       </p>
     </template>
 
+    <!--
+      自由選択中の操作バー。
+      選ぶ相手は一覧なので、スクロールしても付いてくる位置に置かないと
+      「選んだあとどうするか」が画面から消えてしまう。
+    -->
+    <div
+      v-if="picking"
+      class="fixed inset-x-0 bottom-0 z-40 border-t-2 border-fg bg-surface px-6 pt-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]"
+    >
+      <div class="mx-auto flex max-w-xl items-center justify-between gap-3 lg:max-w-5xl">
+        <p class="font-round text-[12px] text-fg-dim">
+          <span class="font-mono text-[16px] font-bold tabular-nums text-fg">
+            {{ pickedIds.length }}
+          </span>
+          / {{ SHARE_LIMIT }} 選択中
+        </p>
+        <div class="flex items-center gap-4">
+          <button type="button" :class="TEXT_LINK" @click="picking = false">
+            やめる
+          </button>
+          <button
+            type="button"
+            :class="BAR_BUTTON"
+            :disabled="pickedIds.length === 0"
+            @click="showShare = true"
+          >
+            画像にする
+          </button>
+        </div>
+      </div>
+    </div>
+
     <ShareCardModal
       v-if="showShare"
       :stats="stats"
       :list="shareList"
+      :list-label="shareHeading"
+      :order="shareOrder"
+      :picked-count="pickedIds.length"
+      @update:order="shareOrder = $event"
+      @pick="startPicking"
       @close="showShare = false"
     />
   </section>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import UserCircleIcon from './UserCircleIcon.vue'
-import { formatDate, formatElapsed } from '@/lib/format'
+import { formatDate, formatSpan } from '@/lib/format'
 import type { Stats } from '@/lib/stats'
 import type { SubscribedChannel } from '@/types/youtube'
 
@@ -14,8 +14,17 @@ withDefaults(
     /** channelId → data URL(取得できたものだけ) */
     avatars: Record<string, string>
   }>(),
-  { listLabel: '古い順トップ5' },
+  { listLabel: '登録が古い順' },
 )
+
+/**
+ * 開設からどれだけ経って登録したか。
+ * 開設日は後追いで埋まる値なので、まだ無い/削除済みなら添えない。
+ */
+function sinceOpen(c: SubscribedChannel): string | null {
+  if (!c.channelCreatedAt) return null
+  return formatSpan(c.channelCreatedAt, c.subscribedAt)
+}
 
 /**
  * 紙の粒子。body::after は position: fixed なので書き出し画像には入らない。
@@ -43,45 +52,14 @@ const GRAIN =
         </span>
       </header>
 
-      <!-- 主役。このカードの答えなので一番大きく扱う -->
-      <template v-if="stats.oldest">
-        <!-- pl-5 はカードの角丸 20px に合わせている -->
-        <p class="mt-6 mb-1.5 pl-5 font-round text-[11px] font-bold text-fg-dim">最初の登録</p>
-        <!--
-          影は box-shadow ではなく実要素で敷く。foreignObject 経由の書き出しでは
-          Safari が box-shadow の角丸を落とし、角ばった影になってしまうため。
-        -->
-        <div class="relative">
-          <div
-            aria-hidden="true"
-            class="absolute inset-0 translate-x-1 translate-y-1 rounded-[20px] bg-fg"
-          />
-          <div class="relative rounded-[20px] border-2 border-fg bg-surface px-5 py-4">
-            <div class="flex items-center gap-2.5">
-              <img
-                v-if="avatars[stats.oldest.channelId]"
-                :src="avatars[stats.oldest.channelId]"
-                alt=""
-                class="size-8 shrink-0 rounded-full bg-base object-cover"
-              />
-              <UserCircleIcon v-else class="size-8 shrink-0 text-fg-faint" />
-              <span class="min-w-0 flex-1 truncate text-[13px]">{{ stats.oldest.title }}</span>
-            </div>
-
-            <p class="mt-4 font-mono text-[30px] leading-none font-medium tabular-nums">
-              {{ formatDate(stats.oldest.subscribedAt) }}
-            </p>
-            <p class="mt-3.5 font-round text-[12px] text-fg-dim">
-              {{ formatElapsed(stats.oldest.subscribedAt) }}
-            </p>
-          </div>
-        </div>
-      </template>
-
-      <!-- 集計値。結果画面と同じ 3 枠 -->
-      <dl class="mt-4 grid grid-cols-3 items-stretch gap-2">
-        <div class="rounded-2xl border border-fg bg-surface px-2 py-3 text-center">
-          <dt class="text-[9px] text-fg-dim">チャンネル開設</dt>
+      <!--
+        集計値。結果画面と同じ 3 枠。
+        「最初の登録」のカードは一覧に譲ったので、何の開設日/年数なのかが
+        枠の中だけで分かるようラベルを言い切る形にしている。
+      -->
+      <dl class="mt-6 grid grid-cols-3 items-stretch gap-2">
+        <div class="rounded-2xl border border-fg bg-surface px-2 py-3.5 text-center">
+          <dt class="text-[9px] text-fg-dim">最古の開設</dt>
           <dd
             v-if="stats.oldest?.channelCreatedAt"
             class="mt-1.5 font-mono text-[13px] leading-none font-medium tabular-nums"
@@ -90,13 +68,13 @@ const GRAIN =
           </dd>
           <dd v-else class="mt-1.5 font-round text-[19px] leading-none font-bold">—</dd>
         </div>
-        <div class="rounded-2xl border border-fg bg-surface px-2 py-3 text-center">
-          <dt class="text-[9px] text-fg-dim">経過年数</dt>
+        <div class="rounded-2xl border border-fg bg-surface px-2 py-3.5 text-center">
+          <dt class="text-[9px] text-fg-dim">登録歴</dt>
           <dd class="mt-1.5 font-round text-[19px] leading-none font-bold tabular-nums">
-            {{ stats.yearsSinceOldest }}
+            {{ stats.yearsSinceOldest }}<span class="text-[0.6em] font-medium">年</span>
           </dd>
         </div>
-        <div class="rounded-2xl border border-fg bg-surface px-2 py-3 text-center">
+        <div class="rounded-2xl border border-fg bg-surface px-2 py-3.5 text-center">
           <dt class="text-[9px] text-fg-dim">登録チャンネル</dt>
           <dd class="mt-1.5 font-round text-[19px] leading-none font-bold tabular-nums">
             {{ stats.total }}
@@ -104,30 +82,45 @@ const GRAIN =
         </div>
       </dl>
 
-      <!-- 一覧 -->
+      <!-- 一覧。ここがこのカードの主役なので、残りの高さを全部渡す -->
       <p class="mt-5 mb-1.5 pl-5 font-round text-[11px] font-bold text-fg-dim">
         {{ listLabel }}
       </p>
-      <ol class="flex-1 rounded-[20px] border-2 border-fg bg-surface px-4 py-1">
+      <!-- 5 件に満たないときも枠が間延びして見えないよう、中身は縦中央に寄せる -->
+      <ol
+        class="flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-[20px] border-2 border-fg bg-surface px-4 py-1"
+      >
         <li
-          v-for="(c, i) in list"
+          v-for="c in list"
           :key="c.channelId"
-          class="flex items-center gap-2.5 border-b border-line py-2.5 last:border-0"
+          class="flex items-center gap-3 border-b border-line py-4 last:border-0"
         >
-          <span class="w-3 shrink-0 text-right font-mono text-[9px] tabular-nums text-fg-faint">
-            {{ i + 1 }}
-          </span>
           <img
             v-if="avatars[c.channelId]"
             :src="avatars[c.channelId]"
             alt=""
-            class="size-6 shrink-0 rounded-full bg-base object-cover"
+            class="size-9 shrink-0 rounded-full bg-base object-cover"
           />
-          <UserCircleIcon v-else class="size-6 shrink-0 text-fg-faint" />
-          <span class="min-w-0 flex-1 truncate text-[11px]">{{ c.title }}</span>
-          <span class="shrink-0 font-mono text-[10px] tabular-nums text-fg-dim">
-            {{ formatDate(c.subscribedAt) }}
-          </span>
+          <UserCircleIcon v-else class="size-9 shrink-0 text-fg-faint" />
+
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-[12.5px]">{{ c.title }}</p>
+            <!--
+              登録日を主、開設からの長さを添えにする。
+              添えは開設日が取れたときだけ出す(削除済みチャンネルでは出ない)。
+            -->
+            <div class="mt-1.5 flex items-baseline gap-2">
+              <span class="shrink-0 font-mono text-[12px] tabular-nums">
+                {{ formatDate(c.subscribedAt) }}
+              </span>
+              <span
+                v-if="sinceOpen(c)"
+                class="truncate font-round text-[9px] text-fg-dim"
+              >
+                開設から{{ sinceOpen(c) }}後
+              </span>
+            </div>
+          </div>
         </li>
       </ol>
     </div>

@@ -7,14 +7,31 @@ import {
 import { buildStats } from '@/lib/stats'
 import { AppError, isAppError, type AppErrorKind } from '@/lib/errors'
 import { filterByQuery, normalizeForSearch } from '@/lib/search'
-import { elapsedYears, spanMs } from '@/lib/format'
+import { elapsedYears } from '@/lib/format'
+import { sortChannels, type SortOrder } from '@/lib/sort'
 import type { SubscribedChannel } from '@/types/youtube'
 
+export type { SortOrder }
+
+/** 書き出し画像に載せるチャンネルの件数 */
+export const SHARE_LIMIT = 5
+
 /**
- * 並べ替えの基準。
- * sinceOpen 系は「登録先チャンネルの開設から、登録するまでの長さ」で並べる。
+ * 書き出し画像の並び。
+ * 一覧の並べ替えと同じ 4 種に、手で選ぶ custom を足したもの。
+ * 一覧の並べ替え(sortOrder)とは連動させない。画像に載せたい 5 件と、
+ * 画面で眺めたい並びは別物なので、片方を触ったらもう片方も変わると困る。
  */
-export type SortOrder = 'oldest' | 'newest' | 'sinceOpenShort' | 'sinceOpenLong'
+export type ShareOrder = SortOrder | 'custom'
+
+/** 画像の一覧に添える見出し */
+export const SHARE_ORDER_HEADING: Record<ShareOrder, string> = {
+  oldest: '登録が古い順',
+  newest: '登録が新しい順',
+  sinceOpenShort: '開設からすぐ登録した順',
+  sinceOpenLong: '開設から長く経って登録した順',
+  custom: 'えらんだチャンネル',
+}
 
 export type RangeMode = 'lte' | 'gte' | 'range'
 
@@ -58,6 +75,11 @@ const errorKind = ref<AppErrorKind | null>(null)
 const progress = ref<FetchProgress>({ loaded: 0, total: null, truncated: false })
 const truncated = ref(false)
 const sortOrder = ref<SortOrder>('oldest')
+const shareOrder = ref<ShareOrder>('oldest')
+/** 自由選択で選んだ channelId。押した順に持ち、画像もその順で並べる */
+const pickedIds = ref<string[]>([])
+/** 一覧に選択ボタンを出しているか(自由選択モード) */
+const picking = ref(false)
 const keyword = ref('')
 const yearFilter = ref<AxisFilter>(defaultAxisFilter())
 const spanFilter = ref<AxisFilter>(defaultAxisFilter())
@@ -107,39 +129,54 @@ export function useSubscriptions() {
   /** 部分一致が 0 件で、曖昧一致にフォールバックしたか */
   const isFuzzyMatch = computed(() => filtered.value.fuzzy)
 
-  const visibleChannels = computed(() => {
-    const list = [...filtered.value.items]
-    const order = sortOrder.value
+  const visibleChannels = computed(() =>
+    sortChannels(filtered.value.items, sortOrder.value),
+  )
 
-    if (order === 'oldest' || order === 'newest') {
-      list.sort((a, b) =>
-        order === 'oldest'
-          ? a.subscribedAt.getTime() - b.subscribedAt.getTime()
-          : b.subscribedAt.getTime() - a.subscribedAt.getTime(),
-      )
-      return list
-    }
-
-    /**
-     * 開設からの長さで並べる。
-     * 開設日は後追いで埋まるので、まだ無い行は末尾へ寄せる。
-     * 0 として扱うと先頭を占拠し、埋まるたびに行が大きく飛んでしまう。
-     * 同じ長さどうし・未取得どうしは登録が古い順にして、並びを安定させる。
-     */
-    list.sort((a, b) => {
-      const sa = spanMs(a.channelCreatedAt, a.subscribedAt)
-      const sb = spanMs(b.channelCreatedAt, b.subscribedAt)
-      if (sa === null || sb === null) {
-        if (sa === null && sb === null) {
-          return a.subscribedAt.getTime() - b.subscribedAt.getTime()
-        }
-        return sa === null ? 1 : -1
-      }
-      if (sa !== sb) return order === 'sinceOpenShort' ? sa - sb : sb - sa
-      return a.subscribedAt.getTime() - b.subscribedAt.getTime()
-    })
-    return list
+  /** 自由選択で選んだチャンネル。選んだ順のまま、消えた ID は落とす */
+  const pickedChannels = computed(() => {
+    const byId = new Map(channels.value.map((c) => [c.channelId, c]))
+    return pickedIds.value
+      .map((id) => byId.get(id))
+      .filter((c): c is SubscribedChannel => c !== undefined)
   })
+
+  /** 書き出し画像に載せる 5 件。一覧の並び順・絞り込みとは独立させる */
+  const shareList = computed(() =>
+    shareOrder.value === 'custom'
+      ? pickedChannels.value.slice(0, SHARE_LIMIT)
+      : sortChannels(channels.value, shareOrder.value).slice(0, SHARE_LIMIT),
+  )
+
+  const shareHeading = computed(() => SHARE_ORDER_HEADING[shareOrder.value])
+
+  function isPicked(channelId: string): boolean {
+    return pickedIds.value.includes(channelId)
+  }
+
+  /**
+   * 自由選択の出し入れ。
+   * 選んだ時点で画像の並びを custom に寄せる。選ぶ操作は画像に載せるための
+   * ものなので、選んだのに画像が変わらない状態を作らない。
+   * 空になったら既定の並びへ戻す(空の一覧を書き出させないため)。
+   */
+  function togglePick(channelId: string) {
+    if (isPicked(channelId)) {
+      pickedIds.value = pickedIds.value.filter((id) => id !== channelId)
+      if (pickedIds.value.length === 0 && shareOrder.value === 'custom') {
+        shareOrder.value = 'oldest'
+      }
+      return
+    }
+    if (pickedIds.value.length >= SHARE_LIMIT) return
+    pickedIds.value = [...pickedIds.value, channelId]
+    shareOrder.value = 'custom'
+  }
+
+  function clearPicks() {
+    pickedIds.value = []
+    if (shareOrder.value === 'custom') shareOrder.value = 'oldest'
+  }
 
   async function load(accessToken: string) {
     status.value = 'loading'
@@ -223,6 +260,9 @@ export function useSubscriptions() {
     sortOrder.value = 'oldest'
     yearFilter.value = defaultAxisFilter()
     spanFilter.value = defaultAxisFilter()
+    shareOrder.value = 'oldest'
+    pickedIds.value = []
+    picking.value = false
   }
 
   return {
@@ -240,6 +280,15 @@ export function useSubscriptions() {
     yearFilter,
     spanFilter,
     hasDateFilter,
+    shareOrder,
+    shareList,
+    shareHeading,
+    pickedIds,
+    pickedChannels,
+    picking,
+    isPicked,
+    togglePick,
+    clearPicks,
     load,
     loadMock,
     reset,

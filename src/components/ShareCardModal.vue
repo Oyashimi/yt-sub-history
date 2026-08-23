@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { toPng } from 'html-to-image'
 import ShareCard from './ShareCard.vue'
 import { toDataUrl } from '@/lib/image'
+import { SHARE_LIMIT, type ShareOrder } from '@/composables/useSubscriptions'
 import type { Stats } from '@/lib/stats'
 import type { SubscribedChannel } from '@/types/youtube'
 
@@ -11,8 +12,17 @@ const props = defineProps<{
   /** カードに載せるチャンネル。並び順は呼び出し側で決める */
   list: SubscribedChannel[]
   listLabel?: string
+  /** 画像の並び。ここで切り替えた結果は呼び出し側に返す */
+  order: ShareOrder
+  /** 一覧で選ばれている件数。0 なら自由選択はまだ使えない */
+  pickedCount: number
 }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{
+  close: []
+  'update:order': [ShareOrder]
+  /** まだ 1 件も選んでいない状態で自由選択を押したとき。一覧で選ばせる */
+  pick: []
+}>()
 
 const frameRef = useTemplateRef<HTMLElement>('frame')
 /** プレビューに使える領域。ここの幅を基準に縮小率を決める */
@@ -21,6 +31,8 @@ const areaRef = useTemplateRef<HTMLElement>('area')
 const controlsRef = useTemplateRef<HTMLElement>('controls')
 const rootRef = useTemplateRef<HTMLElement>('root')
 const avatars = ref<Record<string, string>>({})
+/** data URL 化を試した channelId。失敗したものを毎回引き直さないための控え */
+const triedAvatars = new Set<string>()
 /** 書き出し済み PNG の data URL。長押し保存できるよう、これをプレビューに出す */
 const pngUrl = ref<string | null>(null)
 const generating = ref(false)
@@ -39,22 +51,48 @@ const BUTTON_BASE =
 const BUTTON_MAIN = `${BUTTON_BASE} px-8 py-4 text-[16px] font-bold shadow-[5px_5px_0_var(--color-base)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0_var(--color-base)] active:translate-x-[5px] active:translate-y-[5px] active:shadow-none`
 const BUTTON_SUB = `${BUTTON_BASE} px-4 py-2.5 text-[12px] font-medium shadow-[3px_3px_0_var(--color-base)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_var(--color-base)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none`
 
-onMounted(async () => {
-  // カードに出るサムネだけインライン化する。一覧に載らない場合もある最古の 1 件も含める
-  const targets = [...props.list]
-  const oldest = props.stats.oldest
-  if (oldest && !targets.some((c) => c.channelId === oldest.channelId)) targets.push(oldest)
+/**
+ * 画像に載せる並び。一覧の並べ替えと同じ組み方にして、
+ * 「一覧でできることが画像でもできる」と見て分かるようにする。
+ */
+const ORDER_GROUPS: Array<{
+  axis: string
+  options: Array<{ value: ShareOrder; label: string }>
+}> = [
+  {
+    axis: '登録日',
+    options: [
+      { value: 'oldest', label: '古い順' },
+      { value: 'newest', label: '新しい順' },
+    ],
+  },
+  {
+    axis: '開設から',
+    options: [
+      { value: 'sinceOpenShort', label: '短い順' },
+      { value: 'sinceOpenLong', label: '長い順' },
+    ],
+  },
+]
 
-  const entries = await Promise.all(
-    targets.map(async (c) => [c.channelId, await toDataUrl(c.thumbnailUrl)] as const),
-  )
-  avatars.value = Object.fromEntries(
-    entries.filter((e): e is readonly [string, string] => e[1] !== null),
-  )
-  // サムネが載った状態で先に書き出しておく。長押し保存をボタン待ちにしないため
-  await nextTick()
-  await ensurePng()
-})
+/** 選択中は塗り、それ以外は薄い字。結果画面の並べ替えと同じ扱い */
+function pillClass(active: boolean): string {
+  return active
+    ? 'bg-fg/15 font-bold text-fg'
+    : 'text-fg-faint hover:bg-line/60 hover:text-fg-dim'
+}
+
+/**
+ * 自由選択。まだ 1 件も選んでいないときは切り替えても空の画像になるので、
+ * モードを変えるのではなく一覧で選んでもらうところへ送る。
+ */
+function chooseCustom() {
+  if (props.pickedCount === 0) {
+    emit('pick')
+    return
+  }
+  emit('update:order', 'custom')
+}
 
 /**
  * 書き出し対象のカード要素。ShareCard の $el は当てにならないので
@@ -140,6 +178,59 @@ onBeforeUnmount(() => {
   window.removeEventListener('orientationchange', fit)
 })
 
+/** カードに出るサムネを data URL 化する。すでに試したものは引き直さない */
+async function loadAvatars(list: SubscribedChannel[]) {
+  const targets = list.filter((c) => !triedAvatars.has(c.channelId))
+  if (targets.length === 0) return
+  for (const c of targets) triedAvatars.add(c.channelId)
+
+  const entries = await Promise.all(
+    targets.map(async (c) => [c.channelId, await toDataUrl(c.thumbnailUrl)] as const),
+  )
+  avatars.value = {
+    ...avatars.value,
+    ...Object.fromEntries(
+      entries.filter((e): e is readonly [string, string] => e[1] !== null),
+    ),
+  }
+}
+
+/**
+ * 焼き直しの世代。並び順を続けて切り替えたときに、
+ * 古い書き出しが後から届いてプレビューを巻き戻さないようにする。
+ */
+let renderToken = 0
+
+/** サムネを揃えてから焼き直す。載せる中身が変わるたびに呼ぶ */
+async function refresh() {
+  const token = ++renderToken
+  pngUrl.value = null
+  message.value = null
+  await loadAvatars(props.list)
+  if (token !== renderToken) return
+  // 差し替えたサムネと一覧が DOM に乗ってから書き出す
+  await nextTick()
+  const dataUrl = await renderPng()
+  if (token !== renderToken || !dataUrl) return
+  pngUrl.value = dataUrl
+}
+
+onMounted(() => {
+  void refresh()
+})
+
+/**
+ * 載せる中身が変わったら焼き直す。
+ * 配列そのものではなく中身を見る。開設日は後追いで埋まるので、
+ * 参照だけを見ていると「同じ 5 件だが表示が変わった」を取りこぼす。
+ */
+const listKey = computed(() =>
+  props.list.map((c) => `${c.channelId}:${c.channelCreatedAt?.getTime() ?? ''}`).join(','),
+)
+watch(listKey, () => {
+  void refresh()
+})
+
 /** Event で reject されることもあるので、型を絞らず読める形にする */
 function describeError(error: unknown): string {
   if (error instanceof Error) return `${error.name}: ${error.message}`
@@ -147,13 +238,8 @@ function describeError(error: unknown): string {
   return String(error)
 }
 
-/**
- * カードを PNG にして data URL を控える。以降は焼き直さず使い回す。
- * data URL のままにしているのは、iOS Safari が長押しで
- * 「写真に追加」を出せるのが data: の img だけだから。
- */
-async function ensurePng(): Promise<string | null> {
-  if (pngUrl.value) return pngUrl.value
+/** カードを PNG にする。pngUrl の出し入れは呼び出し側に任せる */
+async function renderPng(): Promise<string | null> {
   const node = cardEl()
   if (!node) {
     console.error('[share-card] カード要素が取れない')
@@ -167,7 +253,6 @@ async function ensurePng(): Promise<string | null> {
       lastError.value = `空の data URL (${node.offsetWidth}x${node.offsetHeight})`
       return null
     }
-    pngUrl.value = dataUrl
     return dataUrl
   } catch (error) {
     // 原因が分からないと直せないので、失敗はコンソールに残す
@@ -177,6 +262,18 @@ async function ensurePng(): Promise<string | null> {
   } finally {
     generating.value = false
   }
+}
+
+/**
+ * 書き出し済みの PNG を返す。まだ無ければその場で焼く。
+ * data URL のままにしているのは、iOS Safari が長押しで
+ * 「写真に追加」を出せるのが data: の img だけだから。
+ */
+async function ensurePng(): Promise<string | null> {
+  if (pngUrl.value) return pngUrl.value
+  const dataUrl = await renderPng()
+  if (dataUrl) pngUrl.value = dataUrl
+  return dataUrl
 }
 
 async function pngFile(): Promise<File | null> {
@@ -325,6 +422,44 @@ async function share() {
       </div>
 
       <div ref="controls" class="flex w-full flex-col items-center gap-4 pb-4">
+        <!--
+          載せる 5 件の選び方。プレビューのすぐ下に置いて、
+          押した結果が上のカードで確かめられるようにする。
+        -->
+        <div class="flex flex-wrap items-center justify-center gap-2 font-round text-[11px]">
+          <span
+            v-for="g in ORDER_GROUPS"
+            :key="g.axis"
+            class="flex items-center overflow-hidden rounded-full border-2 border-fg bg-surface"
+          >
+            <span class="bg-line px-2.5 py-1.5 font-bold text-fg-dim">{{ g.axis }}</span>
+            <span class="flex items-center gap-1 px-1.5 py-1">
+              <button
+                v-for="o in g.options"
+                :key="o.value"
+                type="button"
+                class="rounded-full px-2 py-0.5 transition-colors"
+                :aria-pressed="order === o.value"
+                :class="pillClass(order === o.value)"
+                @click="emit('update:order', o.value)"
+              >
+                {{ o.label }}
+              </button>
+            </span>
+          </span>
+
+          <!-- 自由選択。押せる状態かどうかで文言を変える -->
+          <button
+            type="button"
+            class="rounded-full border-2 border-fg bg-surface px-3 py-1.5 transition-colors"
+            :aria-pressed="order === 'custom'"
+            :class="pillClass(order === 'custom')"
+            @click="chooseCustom"
+          >
+            {{ pickedCount === 0 ? '自由に選ぶ' : `自由選択 ${pickedCount}/${SHARE_LIMIT}` }}
+          </button>
+        </div>
+
         <p v-if="message" class="font-round text-[11px] text-base">{{ message }}</p>
         <p v-else-if="pngUrl" class="font-round text-[11px] text-base">
           画像を長押しでも保存できるよ
