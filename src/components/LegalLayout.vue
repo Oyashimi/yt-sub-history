@@ -35,6 +35,12 @@ defineProps<{ title: string; updatedAt: string }>()
   color: var(--color-fg);
   margin-top: 2.5rem;
 }
+.legal :deep(h3) {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg);
+  margin-top: 1.75rem;
+}
 .legal :deep(ul) {
   list-style: disc;
   padding-left: 1.25rem;
