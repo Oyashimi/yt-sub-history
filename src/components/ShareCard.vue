@@ -59,7 +59,7 @@ const GRAIN =
       -->
       <dl class="mt-6 grid grid-cols-3 items-stretch gap-2">
         <div class="rounded-2xl border border-fg bg-surface px-2 py-3.5 text-center">
-          <dt class="text-[9px] text-fg-dim">最古の開設</dt>
+          <dt class="text-[9px] text-fg-dim">開設日</dt>
           <dd
             v-if="stats.oldest?.channelCreatedAt"
             class="mt-1.5 font-mono text-[13px] leading-none font-medium tabular-nums"
